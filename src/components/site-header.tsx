@@ -112,26 +112,6 @@ export async function SiteHeader() {
               </div>
             </Link>
           )}
-          {siteConfig.links.website && (
-            <Link
-              href={siteConfig.links.website}
-              target="_blank"
-              rel="noreferrer"
-            >
-              <div
-                className={cn(
-                  buttonVariants({
-                    variant: 'ghost',
-                  }),
-                  'w-9 px-0',
-                )}
-              >
-                <Icons.logo className="h-6 w-6 fill-current" />
-                <span className="sr-only">Website</span>
-              </div>
-            </Link>
-          )}
-
           {/* Profile Dropdown - only show if user is logged in */}
           {session ? (
             <DropdownMenu>

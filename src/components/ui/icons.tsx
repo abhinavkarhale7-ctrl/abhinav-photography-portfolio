@@ -1,23 +1,6 @@
 type IconProps = React.HTMLAttributes<SVGElement>
 
 export const Icons = {
-  logo: (props: IconProps) => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" {...props}>
-      <text
-        x="50"
-        y="55"
-        textAnchor="middle"
-        dominantBaseline="middle"
-        fontFamily="var(--font-serif), Georgia, serif"
-        fontSize="48"
-        fontWeight="600"
-        letterSpacing="-2"
-        fill="currentColor"
-      >
-        AK
-      </text>
-    </svg>
-  ),
   twitter: (props: IconProps) => (
     <svg
       {...props}

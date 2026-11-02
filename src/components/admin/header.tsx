@@ -2,7 +2,6 @@
 
 import Link from 'next/link'
 import type { SiteConfig } from '~/config/site'
-import { Icons } from '~/components/ui/icons'
 import { MobileSidebar } from '~/components/admin/mobile-sidebar'
 import { AdminSidebar } from '~/components/admin/sidebar'
 import { ThemeToggle } from '~/components/admin/theme/theme-toggle'
@@ -26,7 +25,6 @@ export function AdminHeader({ siteConfig }: AdminHeaderProps) {
             className="flex items-center gap-2 font-semibold"
             prefetch={false}
           >
-            <Icons.logo className="h-6 w-6" />
             <span>{siteConfig.title}</span>
           </Link>
           <Link href="/admin">

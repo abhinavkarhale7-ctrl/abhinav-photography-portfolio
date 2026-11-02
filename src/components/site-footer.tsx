@@ -88,25 +88,6 @@ export function SiteFooter() {
                 </div>
               </Link>
             )}
-            {siteConfig.links.website && (
-              <Link
-                href={siteConfig.links.website}
-                target="_blank"
-                rel="noreferrer"
-              >
-                <div
-                  className={cn(
-                    buttonVariants({
-                      variant: 'ghost',
-                    }),
-                    'w-9 px-0',
-                  )}
-                >
-                  <Icons.logo className="h-6 w-6 fill-current" />
-                  <span className="sr-only">website</span>
-                </div>
-              </Link>
-            )}
           </nav>
         </div>
       </div>

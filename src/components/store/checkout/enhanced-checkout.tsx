@@ -131,7 +131,7 @@ export function EnhancedCheckout({
     city: '',
     state: '',
     zipCode: '',
-    country: 'US',
+    country: 'IN',
     phone: '',
     specialInstructions: '',
   })
@@ -524,7 +524,7 @@ export function EnhancedCheckout({
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="zipCode">ZIP Code *</Label>
+                      <Label htmlFor="zipCode">PIN Code *</Label>
                       <Input
                         id="zipCode"
                         value={shippingDetails.zipCode}
@@ -546,6 +546,7 @@ export function EnhancedCheckout({
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
+                          <SelectItem value="IN">India</SelectItem>
                           <SelectItem value="US">United States</SelectItem>
                           <SelectItem value="CA">Canada</SelectItem>
                           <SelectItem value="UK">United Kingdom</SelectItem>
@@ -651,20 +652,7 @@ export function EnhancedCheckout({
                       }
                     />
                     <Label htmlFor="terms" className="text-sm">
-                      I agree to the{' '}
-                      <a
-                        href="/terms"
-                        className="text-blue-600 hover:underline"
-                      >
-                        Terms of Service
-                      </a>{' '}
-                      and{' '}
-                      <a
-                        href="/privacy"
-                        className="text-blue-600 hover:underline"
-                      >
-                        Privacy Policy
-                      </a>
+                      I agree to the terms of service and privacy policy.
                     </Label>
                   </div>
 
@@ -710,11 +698,11 @@ export function EnhancedCheckout({
                 {showTaxSeparately && (
                   <>
                     <div className="flex justify-between text-sm">
-                      <span>Tax</span>
+                      <span>GST</span>
                       <span>{formatPrice(tax)}</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span>Processing Fee</span>
+                      <span>Payment fee</span>
                       <span>{formatPrice(stripeTax)}</span>
                     </div>
                   </>

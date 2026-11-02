@@ -24,6 +24,7 @@ import {
   Star
 } from 'lucide-react'
 import { Frame } from '~/components/store/frame/frame'
+import { EnhancedCheckout } from '~/components/store/checkout/enhanced-checkout'
 import { toast } from 'sonner'
 import { ProductReviews } from './product-reviews'
 import { ProductBadges } from './product-badges'
@@ -41,6 +42,7 @@ export function EnhancedProductView({
   sizes,
   recommendations = [],
 }: EnhancedProductViewProps) {
+  const [showCheckout, setShowCheckout] = useState(false)
   const [selectedSize, setSelectedSize] = useState<string>(sizes[0]?.id || '')
   const [currentView, setCurrentView] = useState<'image' | 'wall'>('image')
   const [showZoom, setShowZoom] = useState(false)
@@ -70,6 +72,11 @@ export function EnhancedProductView({
   }, [product.imageUrl])
 
   const selectedPrintSize = sizes.find((size) => size.id === selectedSize)
+
+  const handleBuy = () => {
+    if (!selectedPrintSize || !product.active) return
+    setShowCheckout(true)
+  }
 
   const handleEnquire = () => {
     if (!selectedPrintSize) return
@@ -340,13 +347,26 @@ export function EnhancedProductView({
           {/* Actions */}
           <div className="space-y-3">
             <Button
-              onClick={handleEnquire}
+              onClick={handleBuy}
               disabled={!selectedPrintSize || !product.active}
               className="w-full py-6 text-lg"
               size="lg"
             >
-              Enquire to Order - {formatPrice(totalPrice)}
+              Buy Print - {formatPrice(totalPrice)}
             </Button>
+            <Button
+              variant="outline"
+              onClick={handleEnquire}
+              className="w-full"
+            >
+              Ask on WhatsApp
+            </Button>
+
+            <ul className="space-y-1 pt-2 text-sm text-gray-600">
+              <li>Archival fine-art print on heavyweight matte paper</li>
+              <li>Made to order · dispatched in 5–7 working days</li>
+              <li>Prices include GST · shipping calculated at checkout</li>
+            </ul>
 
             <div className="grid grid-cols-2 gap-2 text-center text-sm text-gray-600">
               <ProductBadges />
@@ -408,6 +428,23 @@ export function EnhancedProductView({
             ))}
           </div>
         </div>
+      )}
+
+      {showCheckout && selectedPrintSize && (
+        <Dialog open={showCheckout} onOpenChange={setShowCheckout}>
+          <DialogContent className="max-h-[90vh] max-w-6xl overflow-y-auto">
+            <EnhancedCheckout
+              productId={product.id}
+              sizeId={selectedPrintSize.id}
+              quantity={quantity}
+              productSize={{
+                basePrice: selectedPrintSize.basePrice,
+                name: selectedPrintSize.name,
+              }}
+              onClose={() => setShowCheckout(false)}
+            />
+          </DialogContent>
+        </Dialog>
       )}
 
     </div>

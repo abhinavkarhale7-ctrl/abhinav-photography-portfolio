@@ -1,11 +1,11 @@
 import { getEnv } from './env-utils'
 
-// Default configuration with generic placeholder data - same as in use-site-config.ts
+// Default portfolio configuration. Service URLs and credentials remain deployment-specific.
 const defaultConfig = {
-  title: 'Photography Portfolio',
-  description: 'Professional photography portfolio and online store',
+  title: 'Photography',
+  description: 'Selected photographic work by Abhinav Karhale.',
   storeName: 'Photography Store',
-  ownerName: 'Photographer Name',
+  ownerName: 'Abhinav Karhale',
   imageBucketUrl: 'https://your-domain.com/images',
   blogBucketUrl: 'https://your-domain.com/blog-images',
   aboutBucketUrl: 'https://your-domain.com/about-images',
@@ -18,12 +18,12 @@ const defaultConfig = {
     'https://akamaized.net',
     'https://devstreaming-cdn.apple.com',
   ],
-  url: 'https://your-domain.com',
-  altUrl: 'https://your-alt-domain.com',
-  imageDomain: 'your-domain.com', // Domain pattern for Next.js image optimization
+  url: 'https://abhinavkarhale-photography.vercel.app',
+  altUrl: '',
+  imageDomain: '',
   links: {
     github: '',
-    website: 'https://your-domain.com',
+    website: 'https://abhinavkarhale-photography.vercel.app',
     instagram: '',
     twitter: '',
     facebook: '',
@@ -40,19 +40,19 @@ const defaultConfig = {
       // Optional location information for local SEO
       locality: '', // e.g., 'London'
       region: '', // e.g., 'England'
-      country: 'US', // ISO country code
+      country: 'IN', // ISO country code
     },
     // OpenGraph configuration
     openGraph: {
       type: 'website',
-      locale: 'en_US',
-      siteName: 'Photography Portfolio',
+      locale: 'en_IN',
+      siteName: 'Abhinav Karhale Photography',
       images: [
         {
-          url: 'https://your-domain.com/og-image.jpg',
+          url: 'https://abhinavkarhale-photography.vercel.app/api/og?title=Abhinav%20Karhale%20Photography',
           width: 1200,
           height: 630,
-          alt: 'Photography Portfolio',
+          alt: 'Photography by Abhinav Karhale',
         },
       ],
     },
@@ -64,7 +64,7 @@ const defaultConfig = {
     // Additional meta tags
     meta: {
       keywords: [], // Will be populated dynamically per page
-      author: 'Photographer Name',
+      author: 'Abhinav Karhale',
       themeColor: '#000000',
     },
   },
@@ -75,8 +75,8 @@ const defaultConfig = {
     noReply: 'noreply@your-domain.com',
   },
   features: {
-    aiEnabled: true,
-    storeEnabled: true,
+    aiEnabled: false,
+    storeEnabled: false,
     store: {
       reviewsEnabled: false,
       showTax: false, // When true, shows tax separately. When false, includes tax in price

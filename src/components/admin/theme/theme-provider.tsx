@@ -5,13 +5,11 @@ import { ThemeProvider as NextThemesProvider } from 'next-themes'
 
 export function ThemeProvider({
   children,
+  storageKey = 'admin-theme',
   ...props
 }: React.ComponentProps<typeof NextThemesProvider>) {
   return (
-    <NextThemesProvider
-      {...props}
-      storageKey="admin-theme" // Isolated storage key for admin theme
-    >
+    <NextThemesProvider {...props} storageKey={storageKey}>
       {children}
     </NextThemesProvider>
   )

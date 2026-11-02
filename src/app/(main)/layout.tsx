@@ -1,6 +1,7 @@
 import { siteConfig } from '~/config/site'
 import { SiteHeader } from '~/components/site-header'
 import { SiteFooter } from '~/components/site-footer'
+import { ThemeProvider } from '~/components/admin/theme/theme-provider'
 import Script from 'next/script'
 import { generateSEOMetadata, generateStructuredData } from '~/lib/seo-utils'
 
@@ -20,6 +21,13 @@ export default function MainLayout({
   const websiteSchema = generateStructuredData('website', {})
 
   return (
+    <ThemeProvider
+      attribute="class"
+      defaultTheme="system"
+      enableSystem
+      disableTransitionOnChange
+      storageKey="site-theme"
+    >
     <div className="flex min-h-screen flex-col">
       <Script
         id="structured-data-person"
@@ -41,5 +49,6 @@ export default function MainLayout({
       <main className="flex-1">{children}</main>
       <SiteFooter />
     </div>
+    </ThemeProvider>
   )
 }

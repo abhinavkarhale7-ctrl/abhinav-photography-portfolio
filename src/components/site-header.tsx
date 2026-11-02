@@ -24,6 +24,7 @@ import {
   DropdownMenuTrigger,
 } from '~/components/ui/dropdown-menu'
 import { LogoutForm } from '~/components/logout-form'
+import { ThemeToggle } from '~/components/admin/theme/theme-toggle'
 
 export async function SiteHeader() {
   const session = await getSession()
@@ -93,6 +94,7 @@ export async function SiteHeader() {
               </div>
             </Link>
           )}
+          <ThemeToggle />
           {siteConfig.links.github && (
             <Link
               href={siteConfig.links.github}

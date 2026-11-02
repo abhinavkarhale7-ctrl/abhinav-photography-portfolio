@@ -21,13 +21,13 @@ export const env = createEnv({
     R2_CUSTOM_IMG_BUCKET_NAME: z.string(),
     R2_ACCOUNT_ID: z.string(),
     R2_REGION: z.string(),
-    EDGE_CONFIG: z.string().url(),
+    EDGE_CONFIG: z.string().url().optional(),
     FLAGS_SECRET: z.string(),
     JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters for security'),
     JWT_EXPIRATION_HOURS: z.coerce.number(),
     SITE_URL: z.string().url(),
-    ADMIN_EMAIL: z.string().email(),
-    RESEND_API_KEY: z.string(),
+    ADMIN_EMAIL: z.string().email().optional(),
+    RESEND_API_KEY: z.string().optional(),
     GOOGLE_GENERATIVE_AI_API_KEY: z.string().optional(),
     CRON_SECRET: z.string().optional(),
     UPSTASH_REDIS_REST_URL: z.string().url(),
@@ -61,8 +61,12 @@ export const env = createEnv({
     RESEND_API_KEY: process.env.RESEND_API_KEY,
     GOOGLE_GENERATIVE_AI_API_KEY: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
     CRON_SECRET: process.env.CRON_SECRET,
-    UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,
-    UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
+    UPSTASH_REDIS_REST_URL:
+      process.env.UPSTASH_REDIS_REST_URL ??
+      process.env.UPSTASH_REDIS_REST_KV_REST_API_URL,
+    UPSTASH_REDIS_REST_TOKEN:
+      process.env.UPSTASH_REDIS_REST_TOKEN ??
+      process.env.UPSTASH_REDIS_REST_KV_REST_API_TOKEN,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially

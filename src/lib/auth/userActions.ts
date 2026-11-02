@@ -30,6 +30,7 @@ import {
 } from '~/lib/auth/sessionManagement'
 import { reactivateAccount } from '~/lib/auth/accountManagement'
 import { sendEmailVerification } from '~/lib/email/email-service'
+import { env } from '~/env.js'
 import { sanitizeIPAddress } from '~/lib/input-sanitization'
 
 const JWT_EXPIRATION_HOURS = parseInt(process.env.JWT_EXPIRATION_HOURS || '168') // Reduced default
@@ -390,6 +391,12 @@ export async function register(
 
     return {
       message: 'Invalid request. Please refresh the page and try again.',
+    }
+  }
+
+  if (!env.RESEND_API_KEY) {
+    return {
+      message: 'Registration is unavailable until email delivery is configured.',
     }
   }
 

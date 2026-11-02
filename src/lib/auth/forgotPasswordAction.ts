@@ -1,5 +1,6 @@
 'use server'
 
+import { env } from '~/env.js'
 import { sendPasswordReset } from '~/lib/email/email-service'
 import { validateCSRFFromFormData } from '~/lib/csrf-protection'
 import { logSecurityEvent } from '~/lib/security-logging'
@@ -31,6 +32,13 @@ export async function forgotPassword(
   if (!email || !email.includes('@')) {
     return {
       message: 'Please enter a valid email address.',
+    }
+  }
+
+  if (!env.RESEND_API_KEY) {
+    console.error('Password reset unavailable: RESEND_API_KEY is not configured')
+    return {
+      message: 'Password reset is unavailable until email delivery is configured.',
     }
   }
 

@@ -1,8 +1,8 @@
 'use server'
 
-import { Resend } from 'resend'
 import { render } from '@react-email/render'
 import { env } from '~/env.js'
+import { getResendClient } from '~/lib/email/resend'
 import { generateSecureToken, hashToken } from '~/lib/auth/tokenHelpers'
 import { db } from '~/server/db'
 import { users } from '~/server/db/schema'
@@ -19,13 +19,18 @@ import {
 } from '~/components/emails/auth'
 import { siteConfig } from '~/config/site'
 
-const resend = new Resend(env.RESEND_API_KEY)
-
 export async function sendEmailVerification(
   userId: number,
   email: string,
   name: string,
 ): Promise<boolean> {
+  if (!env.RESEND_API_KEY) {
+    console.error(
+      'Email verification unavailable: RESEND_API_KEY is not configured',
+    )
+    return false
+  }
+
   try {
     // Check rate limiting
     const rateLimit = await checkEmailRateLimit(email, 'email_verification')
@@ -61,6 +66,7 @@ export async function sendEmailVerification(
 
     // Send email
     const emailProps = { name, token, expiryMinutes }
+    const resend = getResendClient()
     const { error } = await resend.emails.send({
       from: `Portfolio <${siteConfig.emails.noReply}>`,
       to: [email],
@@ -101,6 +107,13 @@ export async function sendEmailVerification(
 }
 
 export async function sendPasswordReset(email: string): Promise<boolean> {
+  if (!env.RESEND_API_KEY) {
+    console.error(
+      'Password reset unavailable: RESEND_API_KEY is not configured',
+    )
+    return false
+  }
+
   try {
     // Check rate limiting first
     const rateLimit = await checkEmailRateLimit(email, 'password_reset')
@@ -178,6 +191,7 @@ export async function sendPasswordReset(email: string): Promise<boolean> {
       token: result.token, 
       expiryMinutes: result.expiryMinutes 
     }
+    const resend = getResendClient()
     const { error } = await resend.emails.send({
       from: `Portfolio <${siteConfig.emails.noReply}>`,
       to: [email],
@@ -223,8 +237,16 @@ export async function sendSecurityNotification(
   event: string,
   details: string,
 ): Promise<boolean> {
+  if (!env.RESEND_API_KEY) {
+    console.error(
+      'Security notification unavailable: RESEND_API_KEY is not configured',
+    )
+    return false
+  }
+
   try {
     const emailProps = { name, event, details }
+    const resend = getResendClient()
     const { error } = await resend.emails.send({
       from: `Portfolio Security <${siteConfig.emails.noReply}>`,
       to: [email],

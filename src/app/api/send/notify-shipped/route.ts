@@ -1,15 +1,22 @@
 import { OrderShippedEmail, OrderShippedEmailText } from '~/components/emails/order-shipped'
-import { Resend } from 'resend'
+import { env } from '~/env.js'
+import { getResendClient } from '~/lib/email/resend'
 import { siteConfig } from '~/config/site'
 import { db } from '~/server/db'
 import { orders, products, productSizes } from '~/server/db/schema'
 import { eq } from 'drizzle-orm'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
-
 export async function POST(request: Request) {
+  if (!env.RESEND_API_KEY) {
+    return Response.json(
+      { error: 'Email delivery is not configured' },
+      { status: 503 },
+    )
+  }
+
   try {
     const { orderId } = await request.json()
+    const resend = getResendClient()
 
     // Fetch order details with product and size information
     const [order] = await db

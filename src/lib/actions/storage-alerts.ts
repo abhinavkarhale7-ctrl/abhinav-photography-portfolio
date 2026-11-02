@@ -1,9 +1,7 @@
-import { Resend } from 'resend'
 import { env } from '~/env'
+import { getResendClient } from '~/lib/email/resend'
 import { siteConfig } from '~/config/site'
 import { UsageAlertEmail } from '~/components/emails/usage-alert-email'
-
-const resend = new Resend(env.RESEND_API_KEY)
 
 interface UsageAlertData {
   bucketName: string
@@ -16,6 +14,12 @@ interface UsageAlertData {
 
 export async function sendUsageAlert(data: UsageAlertData) {
   try {
+    const adminEmail = env.ADMIN_EMAIL
+    if (!adminEmail) {
+      throw new Error('Storage alerts require ADMIN_EMAIL to be configured')
+    }
+
+    const resend = getResendClient()
     const formattedUsage = formatBytes(data.usageBytes)
     const formattedMax = formatBytes(data.maxBytes)
     
@@ -23,7 +27,7 @@ export async function sendUsageAlert(data: UsageAlertData) {
     
     await resend.emails.send({
       from: `${siteConfig.emails.noReply}`,
-      to: [env.ADMIN_EMAIL],
+      to: [adminEmail],
       subject,
       react: UsageAlertEmail({
         bucketName: data.bucketName,

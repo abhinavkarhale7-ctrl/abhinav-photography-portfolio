@@ -22,15 +22,22 @@ Required by the application:
 - `R2_CUSTOM_IMG_BUCKET_NAME`
 - `R2_ACCOUNT_ID`
 - `R2_REGION`
-- `EDGE_CONFIG`
 - `FLAGS_SECRET`
 - `JWT_SECRET` (at least 32 characters; use a unique random value)
 - `JWT_EXPIRATION_HOURS`
 - `SITE_URL`
-- `ADMIN_EMAIL`
-- `RESEND_API_KEY`
 - `UPSTASH_REDIS_REST_URL`
 - `UPSTASH_REDIS_REST_TOKEN`
+
+The Upstash Vercel integration's `UPSTASH_REDIS_REST_KV_REST_API_URL` and
+`UPSTASH_REDIS_REST_KV_REST_API_TOKEN` names are also supported.
+
+Email delivery is optional while the portfolio is being launched. Password
+reset, verification, storage-alert, and order email flows remain unavailable
+until `RESEND_API_KEY` and `ADMIN_EMAIL` are configured. Resend requires a
+verified domain you own; the free `vercel.app` hostname cannot be used as a
+sender domain. `EDGE_CONFIG` is optional because the app does not currently
+read it.
 
 Set these site and feature values:
 
@@ -46,7 +53,9 @@ If Vercel assigns a different project URL, replace both site URL values with the
 
 - Replace all example credentials with valid production credentials.
 - Configure and verify the PostgreSQL schema using the project migrations before depending on database-backed routes. Review migrations and back up any database containing data before applying them.
-- Configure the R2 buckets and public image URLs. The repository's example bucket URLs are placeholders.
+- Configure the R2 buckets and public image URLs. The `r2.dev` URLs are
+  rate-limited and not recommended for production; connect an owned custom
+  domain before relying on them for substantial traffic.
 - Confirm email delivery, admin access, image uploads, and gallery display in the deployed app.
 - The About page shows a temporary biography until real content is saved. Add approved portfolio images and replace the temporary text before public launch.
 - There is no confirmed public contact email in this repository yet. Add one before advertising a contact method.

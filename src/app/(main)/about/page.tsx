@@ -2,13 +2,27 @@ import React from 'react'
 import { db } from '~/server/db'
 import { eq } from 'drizzle-orm'
 import { about } from '~/server/db/schema'
-import { notFound } from 'next/navigation'
 import { TipTapRenderer } from '~/components/blog/tiptap-renderer'
 import type { Metadata } from 'next'
 import { generateSEOMetadata, generateKeywordDescription } from '~/lib/seo-utils'
 import { siteConfig } from '~/config/site'
 
 export const revalidate = 3600 // Revalidate every hour
+
+const temporaryBiography = {
+  type: 'doc',
+  content: [
+    {
+      type: 'paragraph',
+      content: [
+        {
+          type: 'text',
+          text: 'This biography is being prepared. More information about Abhinav Karhale and his photographic work will be added here soon.',
+        },
+      ],
+    },
+  ],
+}
 
 export async function generateMetadata(): Promise<Metadata> {
   const result = await db
@@ -25,8 +39,8 @@ export async function generateMetadata(): Promise<Metadata> {
   if (!aboutData) {
     return generateSEOMetadata({
       type: 'about',
-      title: `About ${siteConfig.ownerName}`,
-      description: `Learn about ${siteConfig.ownerName}, ${siteConfig.seo.profession}.`,
+      title: 'About ' + siteConfig.ownerName,
+      description: 'Learn about ' + siteConfig.ownerName + ', ' + siteConfig.seo.profession + '.',
       canonicalUrl: '/about',
     })
   }
@@ -58,11 +72,11 @@ export async function generateMetadata(): Promise<Metadata> {
   // Generate SEO-optimized description
   const description = contentText 
     ? generateKeywordDescription(contentText, 'photography', 160)
-    : `Learn about ${siteConfig.ownerName}, ${siteConfig.seo.profession}.`
+    : 'Learn about ' + siteConfig.ownerName + ', ' + siteConfig.seo.profession + '.'
 
   return generateSEOMetadata({
     type: 'about',
-    title: aboutData.title || `About ${siteConfig.ownerName}`,
+    title: aboutData.title || 'About ' + siteConfig.ownerName,
     description,
     canonicalUrl: '/about',
   })
@@ -82,31 +96,38 @@ export default async function About() {
   // Assuming there is only one current about page, if not this will need to be changed.
   const aboutData = result[0]
 
-  if (!aboutData) {
-    notFound()
-  }
-
-  let content
-  try {
-    content = JSON.parse(aboutData.content)
-  } catch (parseError) {
-    console.error('[About] Error parsing about page content:', parseError)
-    content = {
-      type: 'doc',
-      content: [
-        {
-          type: 'paragraph',
-          content: [{ type: 'text', text: 'Error loading content.' }],
-        },
-      ],
+  let content = temporaryBiography
+  if (aboutData) {
+    try {
+      const savedContent = JSON.parse(aboutData.content)
+      content =
+        Array.isArray(savedContent.content) && savedContent.content.length > 0
+          ? savedContent
+          : temporaryBiography
+    } catch (parseError) {
+      console.error('[About] Error parsing about page content:', parseError)
+      content = {
+        type: 'doc',
+        content: [
+          {
+            type: 'paragraph',
+            content: [{
+              type: 'text',
+              text: 'The biography content could not be loaded. Please review it in the site administration area.',
+            }],
+          },
+        ],
+      }
     }
   }
+
+  const pageTitle = aboutData?.title || 'About ' + siteConfig.ownerName
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center">
       <div className="container flex flex-col items-center justify-center gap-12 px-4 py-16 ">
         <h1 className="text-5xl font-extrabold tracking-tight sm:text-[5rem]">
-          {aboutData.title}
+          {pageTitle}
         </h1>
         <section className="flex min-h-screen flex-col items-center">
           <div className="prose prose-lg max-w-none dark:prose-invert">

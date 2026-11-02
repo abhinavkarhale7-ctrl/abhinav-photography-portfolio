@@ -5,7 +5,7 @@ import type { NextRequest } from 'next/server'
 export const runtime = 'edge'
 
 async function loadGoogleFont(font: string, text: string) {
-  const url = `https://fonts.googleapis.com/css2?family=${font}&text=${encodeURIComponent(text)}`
+  const url = 'https://fonts.googleapis.com/css2?family=' + font + '&text=' + encodeURIComponent(text)
   const css = await (await fetch(url)).text()
   const resource = css.match(/src: url\((.+)\) format\('(opentype|truetype|woff)'\)/)
 
@@ -35,13 +35,22 @@ export async function GET(req: NextRequest) {
             height: '100%',
             width: '100%',
             display: 'flex',
+            flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: 32,
-            background: 'white',
+            padding: '80px',
+            background: '#09090b',
+            color: '#fafafa',
+            fontFamily: 'Inter',
+            textAlign: 'center',
           }}
         >
-          Please provide an image URL
+          <div style={{ fontSize: 28, letterSpacing: '0.2em', textTransform: 'uppercase' }}>
+            Photography Portfolio
+          </div>
+          <div style={{ marginTop: 32, fontSize: 64, fontWeight: 700 }}>
+            {title || 'Abhinav Karhale'}
+          </div>
         </div>,
         {
           width: 1200,
@@ -105,7 +114,6 @@ export async function GET(req: NextRequest) {
             width: '100%',
             height: '100%',
             position: 'relative',
-            // zIndex: 1,
           }}
         >
           <img
@@ -182,4 +190,3 @@ export async function GET(req: NextRequest) {
     )
   }
 }
-

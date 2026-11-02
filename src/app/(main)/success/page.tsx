@@ -8,19 +8,24 @@ import { siteConfig } from '~/config/site'
 import Link from 'next/link'
 
 export default async function SuccessPage(props: {
-  searchParams: Promise<{ session_id: string }>
+  searchParams: Promise<{ session_id?: string; order?: string }>
 }) {
   const searchParams = await props.searchParams
   const sessionId = searchParams.session_id
+  const orderId = searchParams.order
 
-  if (!sessionId) {
+  if (!sessionId && !orderId) {
     redirect('/')
   }
 
   const order = await db
     .select()
     .from(orders)
-    .where(eq(orders.stripeSessionId, sessionId))
+    .where(
+      orderId
+        ? eq(orders.id, orderId)
+        : eq(orders.stripeSessionId, sessionId as string),
+    )
     .leftJoin(products, eq(orders.productId, products.id))
     .leftJoin(productSizes, eq(orders.sizeId, productSizes.id))
     .limit(1)

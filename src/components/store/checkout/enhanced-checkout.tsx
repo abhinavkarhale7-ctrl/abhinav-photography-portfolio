@@ -26,22 +26,43 @@ import {
   Truck,
 } from 'lucide-react'
 import { formatPrice, cn } from '~/lib/utils'
-import { Elements } from '@stripe/react-stripe-js'
-import { loadStripe } from '@stripe/stripe-js'
-import { CheckoutForm } from '~/components/store/checkout/stripe-form'
 import type { ShippingMethod } from '~/server/db/schema'
 import { createCheckoutSession } from '~/lib/actions/store/store'
-import {
-  getShippingMethods,
-  updateOrderShipping,
-} from '~/lib/actions/store/shipping'
+import { getShippingMethods } from '~/lib/actions/store/shipping'
 import { getTaxRates } from '~/lib/actions/store/store'
 import { toast } from 'sonner'
 import { siteConfig } from '~/config/site'
 
-const stripePromise = loadStripe(
-  process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!,
-)
+interface RazorpayCheckoutOptions {
+  key: string
+  amount: number
+  currency: string
+  order_id: string
+  name: string
+  description?: string
+  prefill?: { name?: string; email?: string; contact?: string }
+  theme?: { color?: string }
+  handler?: (response: {
+    razorpay_payment_id: string
+    razorpay_order_id: string
+    razorpay_signature: string
+  }) => void
+  modal?: { ondismiss?: () => void }
+}
+
+interface RazorpayInstance {
+  open: () => void
+  on: (
+    event: string,
+    handler: (response: { error?: { description?: string } }) => void,
+  ) => void
+}
+
+declare global {
+  interface Window {
+    Razorpay?: new (options: RazorpayCheckoutOptions) => RazorpayInstance
+  }
+}
 
 interface EnhancedCheckoutProps {
   productId: string
@@ -101,6 +122,7 @@ export function EnhancedCheckout({
 }: EnhancedCheckoutProps) {
   const [currentStep, setCurrentStep] = useState(0)
   const [loading, setLoading] = useState(false)
+  const [paying, setPaying] = useState(false)
   const [shippingDetails, setShippingDetails] = useState<ShippingDetails>({
     email: '',
     firstName: '',
@@ -116,7 +138,11 @@ export function EnhancedCheckout({
   const [shippingMethods, setShippingMethods] = useState<ShippingMethod[]>([])
   const [selectedShipping, setSelectedShipping] = useState<string>('')
   const [agreeToTerms, setAgreeToTerms] = useState(false)
-  const [clientSecret, setClientSecret] = useState<string>()
+  const [razorpayOrder, setRazorpayOrder] = useState<{
+    id: string
+    amount: number
+    keyId: string
+  }>()
   const [orderId, setOrderId] = useState<string>()
   const [taxRates, setTaxRates] = useState({
     taxRate: 2000,
@@ -177,8 +203,7 @@ export function EnhancedCheckout({
       return
     }
 
-    if (currentStep === 1 && !clientSecret) {
-      // Create Stripe session when moving to payment step
+    if (currentStep === 1 && !razorpayOrder) {
       try {
         setLoading(true)
         const session = await createCheckoutSession(
@@ -186,15 +211,12 @@ export function EnhancedCheckout({
           sizeId,
           selectedShipping,
         )
-        if (session.clientSecret && session.orderId) {
-          setClientSecret(session.clientSecret)
-          setOrderId(session.orderId)
-
-          // Update shipping method
-          if (selectedShipping) {
-            await updateOrderShipping(session.orderId, selectedShipping)
-          }
-        }
+        setRazorpayOrder({
+          id: session.razorpayOrderId,
+          amount: session.amount,
+          keyId: session.keyId,
+        })
+        setOrderId(session.orderId)
       } catch (error) {
         console.error('Error creating checkout session:', error)
         toast.error('Failed to initialize payment')
@@ -218,14 +240,114 @@ export function EnhancedCheckout({
     setShippingDetails((prev) => ({ ...prev, [field]: value }))
   }
 
-  const handleShippingMethodChange = async (methodId: string) => {
+  const handleShippingMethodChange = (methodId: string) => {
     setSelectedShipping(methodId)
-    if (orderId) {
-      try {
-        await updateOrderShipping(orderId, methodId)
-      } catch (error) {
-        console.error('Failed to update shipping method:', error)
+  }
+
+  const loadRazorpayScript = () =>
+    new Promise<boolean>((resolve) => {
+      if (window.Razorpay) {
+        resolve(true)
+        return
       }
+
+      const script = document.createElement('script')
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js'
+      script.onload = () => resolve(true)
+      script.onerror = () => resolve(false)
+      document.body.appendChild(script)
+    })
+
+  const handleRazorpayPayment = async () => {
+    if (!razorpayOrder || !orderId) {
+      toast.error('Payment is not ready yet')
+      return
+    }
+
+    setPaying(true)
+
+    try {
+      const loaded = await loadRazorpayScript()
+      if (!loaded || !window.Razorpay) {
+        throw new Error('Unable to load the payment gateway')
+      }
+
+      const checkout = new window.Razorpay({
+        key: razorpayOrder.keyId,
+        amount: razorpayOrder.amount,
+        currency: 'INR',
+        order_id: razorpayOrder.id,
+        name: siteConfig.title,
+        description: `Order ${orderId.slice(0, 8)}`,
+        prefill: {
+          name: `${shippingDetails.firstName} ${shippingDetails.lastName}`.trim(),
+          email: shippingDetails.email,
+          contact: shippingDetails.phone,
+        },
+        theme: { color: '#18181b' },
+        handler: async (response) => {
+          try {
+            const verifyResponse = await fetch('/api/razorpay/verify', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                ...response,
+                orderId,
+                customer: {
+                  name: `${shippingDetails.firstName} ${shippingDetails.lastName}`.trim(),
+                  email: shippingDetails.email,
+                  phone: shippingDetails.phone,
+                  address: {
+                    line1: shippingDetails.address,
+                    city: shippingDetails.city,
+                    state: shippingDetails.state,
+                    postal_code: shippingDetails.zipCode,
+                    country: shippingDetails.country,
+                  },
+                },
+              }),
+            })
+
+            const result = await verifyResponse.json()
+
+            if (!verifyResponse.ok || !result.success) {
+              throw new Error(result.error ?? 'Payment verification failed')
+            }
+
+            toast.success('Payment successful')
+            onClose?.()
+            window.location.href = `/success?order=${orderId}`
+          } catch (error) {
+            console.error('Payment verification failed:', error)
+            toast.error(
+              error instanceof Error
+                ? error.message
+                : 'Payment verification failed',
+            )
+            setPaying(false)
+          }
+        },
+        modal: {
+          ondismiss: () => {
+            setPaying(false)
+            toast.error('Payment cancelled')
+          },
+        },
+      })
+
+      checkout.on('payment.failed', (response) => {
+        console.error('Payment failed:', response.error)
+        toast.error(response.error?.description ?? 'Payment failed')
+        setPaying(false)
+      })
+
+      checkout.open()
+    } catch (error) {
+      console.error('Unable to start payment:', error)
+      toast.error(
+        error instanceof Error ? error.message : 'Unable to start payment',
+      )
+      setPaying(false)
     }
   }
 
@@ -546,24 +668,22 @@ export function EnhancedCheckout({
                     </Label>
                   </div>
 
-                  {clientSecret && agreeToTerms && (
-                    <Elements stripe={stripePromise} options={{ clientSecret }}>
-                      <CheckoutForm 
-                        clientSecret={clientSecret}
-                        shippingDetails={{
-                          name: `${shippingDetails.firstName} ${shippingDetails.lastName}`,
-                          email: shippingDetails.email,
-                          address: {
-                            line1: shippingDetails.address,
-                            city: shippingDetails.city,
-                            state: shippingDetails.state,
-                            postal_code: shippingDetails.zipCode,
-                            country: shippingDetails.country,
-                          },
-                          phone: shippingDetails.phone,
-                        }}
-                      />
-                    </Elements>
+                  {razorpayOrder && agreeToTerms && (
+                    <div className="space-y-3">
+                      <Button
+                        onClick={handleRazorpayPayment}
+                        disabled={paying}
+                        className="w-full py-6 text-lg"
+                        size="lg"
+                      >
+                        {paying
+                          ? 'Opening payment...'
+                          : `Pay ${formatPrice(total)} securely`}
+                      </Button>
+                      <p className="text-center text-xs text-gray-500">
+                        UPI, cards and netbanking via Razorpay
+                      </p>
+                    </div>
                   )}
                 </div>
               )}

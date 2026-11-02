@@ -1,6 +1,6 @@
 'use server'
 
-import { requireStripe } from '~/lib/stripe'
+import { getRazorpayKeyId, requireRazorpay } from '~/lib/razorpay'
 import { db, dbWithTx } from '~/server/db'
 import {
   orders,
@@ -26,12 +26,10 @@ export async function createCheckoutSession(
   sizeId: string,
   shippingMethodId: string,
 ) {
-  // Check if store is enabled
   if (!isStoreEnabledServer()) {
     throw new Error('Store is not available')
   }
 
-  // Validate inputs
   const validatedInput = createCheckoutSessionSchema.safeParse({
     productId,
     sizeId,
@@ -39,100 +37,87 @@ export async function createCheckoutSession(
   })
 
   if (!validatedInput.success) {
-    await logAction('store', `Invalid checkout session input: ${validatedInput.error.message}`)
+    await logAction(
+      'store',
+      `Invalid checkout session input: ${validatedInput.error.message}`,
+    )
     throw new Error('Invalid input parameters')
   }
 
-  const { productId: validProductId, sizeId: validSizeId, shippingMethodId: validShippingMethodId } = validatedInput.data
+  const {
+    productId: validProductId,
+    sizeId: validSizeId,
+    shippingMethodId: validShippingMethodId,
+  } = validatedInput.data
 
   try {
-    // Use transaction to ensure data consistency
-    return await dbWithTx.transaction(async (tx) => {
-      // Check if there's already a pending order for this product and size
-      const existingOrder = await tx
-        .select()
-        .from(orders)
-        .where(
-          and(
-            eq(orders.productId, validProductId),
-            eq(orders.sizeId, validSizeId),
-            eq(orders.status, 'pending'),
-          ),
-        )
-        .limit(1)
+    const orderDetails = await calculateOrderTotal(
+      validProductId,
+      validSizeId,
+      validShippingMethodId,
+    )
 
-      // If there's an existing pending order, return its client secret
-      if (existingOrder[0]) {
-        const stripe = requireStripe()
-        const paymentIntent = await stripe.paymentIntents.retrieve(
-          existingOrder[0].stripeSessionId,
-        )
-        
-        // Verify the payment intent amount matches our calculation
-        const expectedTotal = await calculateOrderTotal(validProductId, validSizeId, validShippingMethodId)
-        if (paymentIntent.amount !== expectedTotal.total) {
-          await logAction('store', `Payment amount mismatch for order ${existingOrder[0].id}: expected ${expectedTotal.total}, got ${paymentIntent.amount}`)
-          throw new Error('Payment amount verification failed')
-        }
+    if (orderDetails.total < 100) {
+      throw new Error('Order total must be at least 100 paise')
+    }
 
-        return { clientSecret: paymentIntent.client_secret }
-      }
+    const razorpay = requireRazorpay()
 
-      // Calculate order details
-      const orderDetails = await calculateOrderTotal(validProductId, validSizeId, validShippingMethodId)
-
-      // Create a payment intent with idempotency key
-      const idempotencyKey = `checkout_${validProductId}_${validSizeId}_${validShippingMethodId}_${Date.now()}`
-      
-      const stripe = requireStripe()
-      const paymentIntent = await stripe.paymentIntents.create({
-        amount: orderDetails.total,
-        currency: 'inr',
-        automatic_payment_methods: { enabled: true },
-        metadata: {
-          productId: validProductId,
-          sizeId: validSizeId,
-          shippingMethodId: validShippingMethodId,
-          subtotal: orderDetails.subtotal.toString(),
-          shippingCost: orderDetails.shippingCost.toString(),
-          tax: orderDetails.tax.toString(),
-        },
-      }, {
-        idempotencyKey,
-      })
-
-      // Create order record
-      const [order] = await tx
-        .insert(orders)
-        .values({
-          stripeSessionId: paymentIntent.id,
-          customerName: '',
-          email: '',
-          productId: validProductId,
-          sizeId: validSizeId,
-          shippingMethodId: validShippingMethodId,
-          status: 'pending',
-          subtotal: orderDetails.subtotal,
-          shippingCost: orderDetails.shippingCost,
-          tax: orderDetails.tax,
-          total: orderDetails.total,
-          currency: 'inr',
-        })
-        .returning()
-
-      await logAction('store', `Checkout session created for order ${order.id}`)
-
-      return {
-        clientSecret: paymentIntent.client_secret,
-        orderId: order.id,
-      }
+    const razorpayOrder = await razorpay.orders.create({
+      amount: orderDetails.total,
+      currency: 'INR',
+      receipt: `rcpt_${Date.now()}`,
+      notes: {
+        productId: validProductId,
+        sizeId: validSizeId,
+        shippingMethodId: validShippingMethodId,
+      },
     })
+
+    const [order] = await db
+      .insert(orders)
+      .values({
+        stripeSessionId: razorpayOrder.id,
+        customerName: '',
+        email: '',
+        productId: validProductId,
+        sizeId: validSizeId,
+        shippingMethodId: validShippingMethodId,
+        status: 'pending',
+        subtotal: orderDetails.subtotal,
+        shippingCost: orderDetails.shippingCost,
+        tax: orderDetails.tax,
+        total: orderDetails.total,
+        currency: 'inr',
+      })
+      .returning()
+
+    if (!order) {
+      throw new Error('Failed to create order')
+    }
+
+    await logAction(
+      'store',
+      `Razorpay order ${razorpayOrder.id} created for order ${order.id}`,
+    )
+
+    return {
+      orderId: order.id,
+      razorpayOrderId: razorpayOrder.id,
+      amount: orderDetails.total,
+      currency: 'INR',
+      keyId: getRazorpayKeyId(),
+    }
   } catch (error) {
-    await logAction('store', `Checkout session creation failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    await logAction(
+      'store',
+      `Checkout session creation failed: ${
+        error instanceof Error ? error.message : 'Unknown error'
+      }`,
+    )
     throw new Error('Failed to create checkout session')
   }
 }
-
 // Helper function to calculate order total with proper validation
 async function calculateOrderTotal(productId: string, sizeId: string, shippingMethodId: string) {
   // Get product, size, base size, and shipping method details
@@ -242,13 +227,18 @@ export async function updateOrderStatus(
   const { stripeSessionId: validSessionId, email: validEmail, status: validStatus, shipping: validShipping } = validatedInput.data
 
   try {
-    // Verify payment status with Stripe first
-    const stripe = requireStripe()
-    const paymentIntent = await stripe.paymentIntents.retrieve(validSessionId)
+    const [existingOrder] = await db
+      .select({ id: orders.id })
+      .from(orders)
+      .where(eq(orders.stripeSessionId, validSessionId))
+      .limit(1)
 
-    if (paymentIntent.status !== 'succeeded') {
-      await logAction('store', `Order update attempted for non-succeeded payment: ${validSessionId}`)
-      return { success: false, error: 'Payment not completed' }
+    if (!existingOrder) {
+      await logAction(
+        'store',
+        `Order update attempted for unknown payment: ${validSessionId}`,
+      )
+      return { success: false, error: 'Order not found' }
     }
 
     // Update existing order in transaction

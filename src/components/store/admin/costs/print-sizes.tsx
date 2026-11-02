@@ -146,7 +146,7 @@ export function PrintSizes({ sizes: initialSizes, onUpdate }: PrintSizesProps) {
               />
             </div>
             <div>
-              <Label>Base Price (£)</Label>
+              <Label>Base Price (₹)</Label>
               <Input
                 type="number"
                 value={newSize.basePrice}
@@ -156,7 +156,7 @@ export function PrintSizes({ sizes: initialSizes, onUpdate }: PrintSizesProps) {
               />
             </div>
             <div>
-              <Label>Sell At Price (£, optional)</Label>
+              <Label>Sell At Price (₹, optional)</Label>
               <Input
                 type="number"
                 value={newSize.sellAtPrice}
@@ -218,7 +218,7 @@ export function PrintSizes({ sizes: initialSizes, onUpdate }: PrintSizesProps) {
                       />
                     </div>
                     <div>
-                      <Label>Base Price (£)</Label>
+                      <Label>Base Price (₹)</Label>
                       <Input
                         type="number"
                         value={editingSize.basePrice}
@@ -231,7 +231,7 @@ export function PrintSizes({ sizes: initialSizes, onUpdate }: PrintSizesProps) {
                       />
                     </div>
                     <div>
-                      <Label>Sell At Price (£, optional)</Label>
+                      <Label>Sell At Price (₹, optional)</Label>
                       <Input
                         type="number"
                         value={editingSize.sellAtPrice}

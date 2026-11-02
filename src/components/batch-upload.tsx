@@ -996,7 +996,7 @@ export function BatchUpload({
                                           e.target.value,
                                         )
                                       }
-                                      placeholder="Price (£)"
+                                      placeholder="Price (₹)"
                                       disabled={
                                         image.uploading || image.uploaded
                                       }

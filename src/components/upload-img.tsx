@@ -712,7 +712,7 @@ export function UploadImg({ bucket, draftId, onImageUpload }: UploadImgProps) {
                   />
                 </div>
                 <div>
-                  <Label>Base Price (£)</Label>
+                  <Label>Base Price (₹)</Label>
                   <Input
                     type="number"
                     value={size.basePrice / 100}

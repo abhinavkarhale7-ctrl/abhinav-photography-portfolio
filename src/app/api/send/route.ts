@@ -99,10 +99,10 @@ export async function POST(request: Request) {
     })
 
     // Format monetary values safely
-    const formattedSubtotal = `£${(order.orders.subtotal / 100).toFixed(2)}`
-    const formattedShipping = `£${(order.orders.shippingCost / 100).toFixed(2)}`
-    const formattedTax = `£${(order.orders.tax / 100).toFixed(2)}`
-    const formattedTotal = `£${(order.orders.total / 100).toFixed(2)}`
+    const formattedSubtotal = `₹${(order.orders.subtotal / 100).toFixed(2)}`
+    const formattedShipping = `₹${(order.orders.shippingCost / 100).toFixed(2)}`
+    const formattedTax = `₹${(order.orders.tax / 100).toFixed(2)}`
+    const formattedTotal = `₹${(order.orders.total / 100).toFixed(2)}`
 
     // Validate admin email exists
     const resend = getResendClient()

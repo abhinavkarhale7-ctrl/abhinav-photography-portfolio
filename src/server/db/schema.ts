@@ -432,7 +432,7 @@ export const orders = pgTable('orders', {
   shippingCost: integer('shippingCost').notNull(),
   tax: integer('tax').notNull(),
   total: integer('total').notNull(),
-  currency: text('currency').notNull().default('gbp'),
+  currency: text('currency').notNull().default('inr'),
   shippingAddress: json('shippingAddress').$type<{
     name: string
     line1: string

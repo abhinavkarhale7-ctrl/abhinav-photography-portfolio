@@ -87,7 +87,7 @@ export async function createCheckoutSession(
       const stripe = requireStripe()
       const paymentIntent = await stripe.paymentIntents.create({
         amount: orderDetails.total,
-        currency: 'gbp',
+        currency: 'inr',
         automatic_payment_methods: { enabled: true },
         metadata: {
           productId: validProductId,
@@ -116,7 +116,7 @@ export async function createCheckoutSession(
           shippingCost: orderDetails.shippingCost,
           tax: orderDetails.tax,
           total: orderDetails.total,
-          currency: 'gbp',
+          currency: 'inr',
         })
         .returning()
 

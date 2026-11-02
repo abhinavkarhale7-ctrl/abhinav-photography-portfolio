@@ -275,7 +275,7 @@ export function AdminOrders({ initialOrders, userId }: AdminOrdersProps) {
                   </TableCell>
                   <TableCell>{formatDateTime(order.createdAt)}</TableCell>
                   <TableCell>{order.email}</TableCell>
-                  <TableCell>£{(order.total / 100).toFixed(2)}</TableCell>
+                  <TableCell>₹{(order.total / 100).toFixed(2)}</TableCell>
                   <TableCell>
                     <Badge
                       className={`${statusColors[order.status]} text-white`}

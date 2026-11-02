@@ -263,7 +263,7 @@ export async function POST(request: Request) {
           const stripePrice = await stripe.prices.create({
             product: stripeProduct.id,
             unit_amount: size.basePrice,
-            currency: 'gbp',
+            currency: 'inr',
           })
 
           await db.insert(productSizes).values({

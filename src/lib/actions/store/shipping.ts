@@ -23,21 +23,26 @@ export async function getShippingMethods() {
 export async function updateShippingMethods(methods: ShippingMethodInput[]) {
   try {
     await db.transaction(async (tx) => {
-      // Deactivate all current methods
-      await tx
-        .update(shippingMethods)
-        .set({ active: false })
-        .where(eq(shippingMethods.active, true))
+      // Deactivate all current methods; re-activated below when still present
+      await tx.update(shippingMethods).set({ active: false })
 
-      // Insert new methods
       for (const method of methods) {
-        await tx.insert(shippingMethods).values({
+        const values = {
           name: method.name,
           description: method.description,
           price: method.price,
           estimatedDays: method.estimatedDays,
           active: true,
-        })
+        }
+
+        if (method.id) {
+          await tx
+            .update(shippingMethods)
+            .set(values)
+            .where(eq(shippingMethods.id, method.id))
+        } else {
+          await tx.insert(shippingMethods).values(values)
+        }
       }
     })
 

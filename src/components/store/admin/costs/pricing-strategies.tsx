@@ -11,6 +11,7 @@ import { Slider } from '~/components/ui/slider'
 import { Switch } from '~/components/ui/switch'
 import type { BasePrintSize } from '~/server/db/schema'
 import { formatPrice } from '~/lib/utils'
+import { updateBulkPrices } from '~/lib/actions/store/sizes'
 import { 
   Calculator, 
   Target, 
@@ -134,9 +135,20 @@ export function PricingStrategies({ sizes, profitMargin, onUpdate }: PricingStra
     }
 
     try {
-      // Here you would call your API to update prices
-      // await updateBulkPrices(updates)
-      toast.success(`NOT Applied ${PRICING_STRATEGIES.find(s => s.id === strategyId)?.name} strategy - UNIMPLEMENTED`)
+      const result = await updateBulkPrices(
+        updates.map((update) => ({
+          id: update.id,
+          sellAtPrice: update.newPrice,
+        })),
+      )
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to apply pricing strategy')
+      }
+
+      toast.success(
+        `${PRICING_STRATEGIES.find((s) => s.id === strategyId)?.name} strategy applied`,
+      )
       onUpdate()
     } catch (_error) {
       toast.error('Failed to apply pricing strategy')

@@ -1,5 +1,6 @@
 'use server'
 
+import { requireAdminAuth } from '~/lib/auth/permissions'
 import { db } from '~/server/db'
 import { basePrintSizes, productSizes } from '~/server/db/schema'
 import { revalidatePath } from 'next/cache'
@@ -275,5 +276,48 @@ export async function applyPrintSizesToProducts(
   } catch (error) {
     console.error('Failed to apply sizes to products:', error)
     return { success: false, error: 'Failed to apply sizes to products' }
+  }
+}
+
+export async function deletePrintSize(id: string) {
+  await requireAdminAuth()
+
+  try {
+    await db.delete(basePrintSizes).where(eq(basePrintSizes.id, id))
+
+    revalidatePath('/admin/store/costs')
+    revalidatePath('/admin/store/products')
+    revalidatePath('/store')
+
+    return { success: true }
+  } catch (error) {
+    console.error('Failed to delete print size:', error)
+    return { success: false, error: 'Failed to delete print size' }
+  }
+}
+
+export async function updateBulkPrices(
+  updates: Array<{ id: string; sellAtPrice: number }>,
+) {
+  await requireAdminAuth()
+
+  try {
+    await db.transaction(async (tx) => {
+      for (const update of updates) {
+        await tx
+          .update(basePrintSizes)
+          .set({ sellAtPrice: update.sellAtPrice, updatedAt: new Date() })
+          .where(eq(basePrintSizes.id, update.id))
+      }
+    })
+
+    revalidatePath('/admin/store/costs')
+    revalidatePath('/admin/store/products')
+    revalidatePath('/store')
+
+    return { success: true }
+  } catch (error) {
+    console.error('Failed to update prices:', error)
+    return { success: false, error: 'Failed to update prices' }
   }
 }

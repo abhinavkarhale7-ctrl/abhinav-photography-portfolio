@@ -72,16 +72,12 @@ export function ShippingSettings({
     ])
   }
 
-  const removeMethod = (index: number) => {
-    setMethods((prev) => prev.filter((_, i) => i !== index))
-  }
-
-  const handleSaveChanges = async () => {
+  const persistMethods = async (list: ShippingMethodInput[]) => {
     try {
       setIsLoading(true)
       setStatus({ type: null, message: null })
 
-      const formattedMethods = methods.map((method) => ({
+      const formattedMethods = list.map((method) => ({
         ...method,
         price: Math.round(parseFloat(method.price) * 100),
         estimatedDays: method.estimatedDays
@@ -104,12 +100,23 @@ export function ShippingSettings({
       console.error('Error saving shipping methods:', error)
       setStatus({
         type: 'error',
-        message: error instanceof Error ? error.message : 'Failed to save shipping methods',
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Failed to save shipping methods',
       })
     } finally {
       setIsLoading(false)
     }
   }
+
+  const removeMethod = (index: number) => {
+    const next = methods.filter((_, i) => i !== index)
+    setMethods(next)
+    void persistMethods(next)
+  }
+
+  const handleSaveChanges = () => persistMethods(methods)
 
   return (
     <Card>

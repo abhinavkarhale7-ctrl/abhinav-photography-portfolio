@@ -13,7 +13,13 @@ import { Input } from '~/components/ui/input'
 import { Label } from '~/components/ui/label'
 import type { BasePrintSize } from '~/server/db/schema'
 import { formatPrice } from '~/lib/utils'
-import { addPrintSize, updatePrintSize } from '~/lib/actions/store/sizes'
+import { Trash2 } from 'lucide-react'
+import { toast } from 'sonner'
+import {
+  addPrintSize,
+  deletePrintSize,
+  updatePrintSize,
+} from '~/lib/actions/store/sizes'
 
 interface PrintSizesProps {
   sizes: BasePrintSize[]
@@ -101,6 +107,21 @@ export function PrintSizes({ sizes: initialSizes, onUpdate }: PrintSizesProps) {
     } catch (error) {
       console.error(error)
     }
+  }
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('Delete this print size?')) return
+
+    const result = await deletePrintSize(id)
+
+    if (!result.success) {
+      toast.error(result.error ?? 'Failed to delete print size')
+      return
+    }
+
+    setSizes((prev) => prev.filter((size) => size.id !== id))
+    toast.success('Print size deleted')
+    onUpdate?.()
   }
 
   return (
@@ -268,13 +289,20 @@ export function PrintSizes({ sizes: initialSizes, onUpdate }: PrintSizesProps) {
                       <Label>Base Price</Label>
                       <p>{formatPrice(size.basePrice)}</p>
                     </div>
-                    <div className="flex items-end justify-end">
+                    <div className="flex items-end justify-end gap-2">
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => handleEdit(size)}
                       >
                         Edit
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => handleDelete(size.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                   </>

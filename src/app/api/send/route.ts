@@ -6,7 +6,8 @@ import {
   AdminOrderNotificationEmail,
   AdminOrderNotificationText,
 } from '~/components/emails/admin-order-notification'
-import { Resend } from 'resend'
+import { env } from '~/env.js'
+import { getResendClient } from '~/lib/email/resend'
 import { db } from '~/server/db'
 import {
   orders,
@@ -19,8 +20,6 @@ import { siteConfig } from '~/config/site'
 import { emailSchema } from '~/lib/validations/store'
 import { logAction } from '~/lib/logging'
 import { emailRateLimit, getClientIP } from '~/lib/rate-limit'
-
-const resend = new Resend(process.env.RESEND_API_KEY)
 
 interface ShippingAddress {
   line1: string
@@ -37,6 +36,14 @@ interface _ShippingDetails {
 }
 
 export async function POST(request: Request) {
+  const adminEmailAddress = env.ADMIN_EMAIL
+  if (!env.RESEND_API_KEY || !adminEmailAddress) {
+    return Response.json(
+      { error: 'Email delivery is not configured' },
+      { status: 503 },
+    )
+  }
+
   // Rate limiting
   const clientIP = getClientIP(request)
   const rateLimitResult = await emailRateLimit.check(clientIP)
@@ -98,10 +105,7 @@ export async function POST(request: Request) {
     const formattedTotal = `£${(order.orders.total / 100).toFixed(2)}`
 
     // Validate admin email exists
-    if (!process.env.ADMIN_EMAIL) {
-      await logAction('email', 'Admin email not configured')
-      return Response.json({ error: 'Email configuration error' }, { status: 500 })
-    }
+    const resend = getResendClient()
 
     // Send customer confirmation email
     const customerEmail = await resend.emails.send({
@@ -162,7 +166,7 @@ export async function POST(request: Request) {
     // Send admin notification email
     const adminEmail = await resend.emails.send({
       from: `${siteConfig.storeName} <${siteConfig.emails.order}>`,
-      to: [process.env.ADMIN_EMAIL],
+      to: [adminEmailAddress],
       subject: `New Order #${order.orders.orderNumber} - ${order.products.name}`,
       replyTo: `${siteConfig.storeName} <${siteConfig.emails.replyTo}>`,
       react: AdminOrderNotificationEmail({

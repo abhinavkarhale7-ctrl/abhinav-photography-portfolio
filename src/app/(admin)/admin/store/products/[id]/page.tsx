@@ -7,6 +7,7 @@ import { ChevronLeft } from 'lucide-react'
 import { isStoreEnabledServer } from '~/lib/store-utils'
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { DeleteProductButton } from '~/components/store/admin/delete-product-button'
 
 export const metadata: Metadata = {
   title: 'Edit Product - Admin',
@@ -73,6 +74,10 @@ export default async function ProductEditPage({ params }: ProductEditPageProps) 
           <h1 className="flex-1 shrink-0 whitespace-nowrap text-xl font-semibold tracking-tight sm:grow-0">
             Edit Product: {product.name}
           </h1>
+          <DeleteProductButton
+            productId={product.id}
+            productName={product.name}
+          />
         </div>
         
         <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6">

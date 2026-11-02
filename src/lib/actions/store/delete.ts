@@ -1,8 +1,9 @@
 'use server'
 
 import { requireStripe } from '~/lib/stripe'
+import { requireAdminAuth } from '~/lib/auth/permissions'
 import { dbWithTx as db } from '~/server/db'
-import { products, productSizes } from '~/server/db/schema'
+import { orders, products, productSizes } from '~/server/db/schema'
 import { eq } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 
@@ -53,5 +54,57 @@ export async function deleteAllProducts(): Promise<DeleteStoreResult> {
       error:
         error instanceof Error ? error.message : 'Failed to delete products',
     }
+  }
+}
+
+export async function deleteProduct(productId: string): Promise<DeleteStoreResult> {
+  await requireAdminAuth()
+
+  try {
+    const [product] = await db
+      .select({ id: products.id })
+      .from(products)
+      .where(eq(products.id, productId))
+      .limit(1)
+
+    if (!product) {
+      return { success: false, error: 'Product not found' }
+    }
+
+    const [existingOrder] = await db
+      .select({ id: orders.id })
+      .from(orders)
+      .where(eq(orders.productId, productId))
+      .limit(1)
+
+    if (existingOrder) {
+      await db
+        .update(products)
+        .set({ active: false, updatedAt: new Date() })
+        .where(eq(products.id, productId))
+
+      revalidatePath('/store')
+      revalidatePath('/admin/store')
+
+      return {
+        success: true,
+        message: 'Product has orders, so it was hidden from the store instead of deleted',
+      }
+    }
+
+    await db.transaction(async (tx) => {
+      await tx
+        .delete(productSizes)
+        .where(eq(productSizes.productId, productId))
+      await tx.delete(products).where(eq(products.id, productId))
+    })
+
+    revalidatePath('/store')
+    revalidatePath('/admin/store')
+
+    return { success: true, message: 'Product deleted' }
+  } catch (error) {
+    console.error('Error deleting product:', error)
+    return { success: false, error: 'Failed to delete product' }
   }
 }

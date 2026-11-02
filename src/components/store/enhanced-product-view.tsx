@@ -23,7 +23,6 @@ import {
   Share2,
   Star
 } from 'lucide-react'
-import { EnhancedCheckout } from '~/components/store/checkout/enhanced-checkout'
 import { Frame } from '~/components/store/frame/frame'
 import { toast } from 'sonner'
 import { ProductReviews } from './product-reviews'
@@ -42,9 +41,7 @@ export function EnhancedProductView({
   sizes,
   recommendations = [],
 }: EnhancedProductViewProps) {
-  const [loading, setLoading] = useState(false)
   const [selectedSize, setSelectedSize] = useState<string>(sizes[0]?.id || '')
-  const [showCheckout, setShowCheckout] = useState(false)
   const [currentView, setCurrentView] = useState<'image' | 'wall'>('image')
   const [showZoom, setShowZoom] = useState(false)
   const [quantity, setQuantity] = useState(1)
@@ -74,18 +71,15 @@ export function EnhancedProductView({
 
   const selectedPrintSize = sizes.find((size) => size.id === selectedSize)
 
-  const handleBuy = async () => {
+  const handleEnquire = () => {
     if (!selectedPrintSize) return
 
-    try {
-      setLoading(true)
-      setShowCheckout(true)
-    } catch (error) {
-      console.error('Error:', error)
-      toast.error('Failed to start checkout')
-    } finally {
-      setLoading(false)
-    }
+    const contactUrl =
+      process.env.NEXT_PUBLIC_ORDER_CONTACT_URL ||
+      siteConfig.links.instagram ||
+      '/about'
+
+    window.open(contactUrl, '_blank', 'noopener,noreferrer')
   }
 
   const handleWishlist = () => {
@@ -346,14 +340,12 @@ export function EnhancedProductView({
           {/* Actions */}
           <div className="space-y-3">
             <Button
-              onClick={handleBuy}
-              disabled={!selectedPrintSize || !product.active || loading}
+              onClick={handleEnquire}
+              disabled={!selectedPrintSize || !product.active}
               className="w-full py-6 text-lg"
               size="lg"
             >
-              {loading
-                ? 'Processing...'
-                : `Add to Cart - ${formatPrice(totalPrice)}`}
+              Enquire to Order - {formatPrice(totalPrice)}
             </Button>
 
             <div className="grid grid-cols-2 gap-2 text-center text-sm text-gray-600">
@@ -418,23 +410,6 @@ export function EnhancedProductView({
         </div>
       )}
 
-      {/* Checkout Dialog */}
-      {showCheckout && selectedPrintSize && (
-        <Dialog open={showCheckout} onOpenChange={setShowCheckout}>
-          <DialogContent className="max-h-[90vh] max-w-6xl overflow-y-auto">
-            <EnhancedCheckout
-              productId={product.id}
-              sizeId={selectedPrintSize.id}
-              quantity={quantity}
-              productSize={{
-                basePrice: selectedPrintSize.basePrice, // Always pass the actual base price from DB
-                name: selectedPrintSize.name
-              }}
-              onClose={() => setShowCheckout(false)}
-            />
-          </DialogContent>
-        </Dialog>
-      )}
     </div>
   )
 }

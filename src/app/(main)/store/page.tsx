@@ -48,9 +48,11 @@ async function getProducts() {
       // Nothing to sell without an active print size.
       if (sizes.length === 0) return null
 
-      const lowestPrice = sizes[0]?.basePrice || 0
-      const taxRate = costs[0]?.taxRate || 2000 // Default to 20% if not found
-      const stripeTaxRate = costs[0]?.stripeTaxRate || 150 // Default to 1.5% if not found
+      const lowestPrice = sizes[0]?.basePrice ?? 0
+      // Nullish fallbacks: a saved 0% must stay 0%, otherwise the displayed
+      // price would include a fee the customer is never charged.
+      const taxRate = costs[0]?.taxRate ?? 2000
+      const stripeTaxRate = costs[0]?.stripeTaxRate ?? 150
       
       let displayPrice = lowestPrice
       if (!siteConfig.features.store.showTax) {

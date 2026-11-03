@@ -71,9 +71,10 @@ async function getRecommendations(currentProductId: string) {
         )
         .orderBy(productSizes.basePrice)
 
-      const lowestPrice = sizes[0]?.basePrice || 0
-      const taxRate = costs[0]?.taxRate || 2000
-      const stripeTaxRate = costs[0]?.stripeTaxRate || 150
+      const lowestPrice = sizes[0]?.basePrice ?? 0
+      // Nullish fallbacks so a saved 0% is respected in displayed prices.
+      const taxRate = costs[0]?.taxRate ?? 2000
+      const stripeTaxRate = costs[0]?.stripeTaxRate ?? 150
 
       let priceWithTax = lowestPrice
       if (!siteConfig.features.store.showTax) {
@@ -192,8 +193,8 @@ export default async function ProductPage(props: Props) {
     .orderBy(desc(storeCosts.createdAt))
     .limit(1)
 
-  const taxRate = costs[0]?.taxRate || 2000 // Default to 20% if not found
-  const stripeTaxRate = costs[0]?.stripeTaxRate || 150 // Default to 1.5% if not found
+  const taxRate = costs[0]?.taxRate ?? 2000
+  const stripeTaxRate = costs[0]?.stripeTaxRate ?? 150
 
   // Calculate prices based on tax display setting
   const sizesWithPrices = sizes.map((size) => {

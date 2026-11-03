@@ -41,7 +41,10 @@ async function getCosts() {
     initialTax: {
       taxRate: costs[0].taxRate / 10000,
       stripeRate: costs[0].stripeTaxRate / 10000,
-      profitPercentage: costs[0].profitPercentage ? costs[0].profitPercentage / 10000 : 20,
+      profitPercentage:
+        costs[0].profitPercentage != null
+          ? costs[0].profitPercentage / 10000
+          : 20,
     }
   }
 }

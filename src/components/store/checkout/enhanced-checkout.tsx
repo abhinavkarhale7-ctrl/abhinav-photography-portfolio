@@ -210,6 +210,7 @@ export function EnhancedCheckout({
           productId,
           sizeId,
           selectedShipping,
+          quantity,
         )
         setRazorpayOrder({
           id: session.razorpayOrderId,

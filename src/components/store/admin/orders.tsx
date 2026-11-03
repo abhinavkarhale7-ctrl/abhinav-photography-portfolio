@@ -155,6 +155,8 @@ export function AdminOrders({ initialOrders, userId }: AdminOrdersProps) {
     )
     // Add pending update with current timestamp
     const timestamp = new Date().getTime()
+    // Remember the previous status so a failed save can actually be undone.
+    const previousStatus = orders.find((order) => order.id === orderId)?.status
     pendingUpdates.current.set(orderId, {
       status: newStatus,
       timestamp,
@@ -176,9 +178,12 @@ export function AdminOrders({ initialOrders, userId }: AdminOrdersProps) {
         pendingUpdates.current.delete(orderId)
         setOrders((currentOrders) =>
           currentOrders.map((order) =>
-            order.id === orderId ? { ...order, status: order.status } : order,
+            order.id === orderId && previousStatus
+              ? { ...order, status: previousStatus }
+              : order,
           ),
         )
+        toast.error(result.error ?? 'Could not update the order status')
         return
       }
 
@@ -205,9 +210,12 @@ export function AdminOrders({ initialOrders, userId }: AdminOrdersProps) {
       pendingUpdates.current.delete(orderId)
       setOrders((currentOrders) =>
         currentOrders.map((order) =>
-          order.id === orderId ? { ...order, status: order.status } : order,
+          order.id === orderId && previousStatus
+            ? { ...order, status: previousStatus }
+            : order,
         ),
       )
+      toast.error('Could not update the order status')
       console.error('Error updating order status:', error)
     }
   }
@@ -284,6 +292,7 @@ export function AdminOrders({ initialOrders, userId }: AdminOrdersProps) {
               <TableHead>Print Name</TableHead>
               <TableHead>Date & Time</TableHead>
               <TableHead>Email</TableHead>
+              <TableHead>Qty</TableHead>
               <TableHead>Amount</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Actions</TableHead>
@@ -293,7 +302,7 @@ export function AdminOrders({ initialOrders, userId }: AdminOrdersProps) {
             {paginatedOrders.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={6}
+                  colSpan={7}
                   className="py-8 text-center text-gray-500"
                 >
                   {statusFilter === 'all'
@@ -313,6 +322,7 @@ export function AdminOrders({ initialOrders, userId }: AdminOrdersProps) {
                   </TableCell>
                   <TableCell>{formatDateTime(order.createdAt)}</TableCell>
                   <TableCell>{order.email}</TableCell>
+                  <TableCell>{order.quantity ?? 1}</TableCell>
                   <TableCell>₹{(order.total / 100).toFixed(2)}</TableCell>
                   <TableCell>
                     <Badge

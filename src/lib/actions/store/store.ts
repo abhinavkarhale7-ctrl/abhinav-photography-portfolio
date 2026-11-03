@@ -25,6 +25,7 @@ export async function createCheckoutSession(
   productId: string,
   sizeId: string,
   shippingMethodId: string,
+  quantity = 1,
 ) {
   if (!isStoreEnabledServer()) {
     throw new Error('Store is not available')
@@ -34,6 +35,7 @@ export async function createCheckoutSession(
     productId,
     sizeId,
     shippingMethodId,
+    quantity,
   })
 
   if (!validatedInput.success) {
@@ -48,6 +50,7 @@ export async function createCheckoutSession(
     productId: validProductId,
     sizeId: validSizeId,
     shippingMethodId: validShippingMethodId,
+    quantity: validQuantity,
   } = validatedInput.data
 
   try {
@@ -55,6 +58,7 @@ export async function createCheckoutSession(
       validProductId,
       validSizeId,
       validShippingMethodId,
+      validQuantity,
     )
 
     if (orderDetails.total < 100) {
@@ -84,6 +88,7 @@ export async function createCheckoutSession(
         sizeId: validSizeId,
         shippingMethodId: validShippingMethodId,
         status: 'pending',
+        quantity: validQuantity,
         subtotal: orderDetails.subtotal,
         shippingCost: orderDetails.shippingCost,
         tax: orderDetails.tax,
@@ -119,7 +124,14 @@ export async function createCheckoutSession(
   }
 }
 // Helper function to calculate order total with proper validation
-async function calculateOrderTotal(productId: string, sizeId: string, shippingMethodId: string) {
+async function calculateOrderTotal(
+  productId: string,
+  sizeId: string,
+  shippingMethodId: string,
+  requestedQuantity = 1,
+) {
+  const quantity = Math.min(Math.max(Math.floor(requestedQuantity) || 1, 1), 99)
+
   // Get product, size, base size, and shipping method details
   const size = await db
     .select()
@@ -155,11 +167,19 @@ async function calculateOrderTotal(productId: string, sizeId: string, shippingMe
     throw new Error('Product, size, base size, or shipping method not found')
   }
 
-  // Calculate the subtotal based on the pricing rules
-  let subtotal = baseSize[0].basePrice
-  if (baseSize[0].sellAtPrice) {
-    subtotal = baseSize[0].sellAtPrice
+  // A hidden product or size must not be purchasable just because someone kept
+  // the IDs from a page they loaded earlier.
+  if (!product[0].active || !size[0].active || !shippingMethod[0].active) {
+    throw new Error('This item is no longer available')
   }
+
+  // Calculate the subtotal based on the pricing rules
+  let unitPrice = baseSize[0].basePrice
+  if (baseSize[0].sellAtPrice) {
+    unitPrice = baseSize[0].sellAtPrice
+  }
+
+  const subtotal = unitPrice * quantity
 
   const shippingCost = shippingMethod[0].price
 

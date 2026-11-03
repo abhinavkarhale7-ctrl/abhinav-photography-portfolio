@@ -431,6 +431,9 @@ export const orders = pgTable('orders', {
   status: text('status', { enum: orderStatuses }).notNull().default('pending'),
   customerName: text('customerName').notNull(),
   email: text('email').notNull(),
+  // How many prints the customer is buying. The totals below are for the whole
+  // quantity, not for one print.
+  quantity: integer('quantity').notNull().default(1),
   subtotal: integer('subtotal').notNull(),
   shippingCost: integer('shippingCost').notNull(),
   tax: integer('tax').notNull(),

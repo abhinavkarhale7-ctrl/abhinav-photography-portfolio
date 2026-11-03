@@ -58,6 +58,7 @@ async function getRecentOrders() {
     shippingCost: orders.shippingCost,
     tax: orders.tax,
     total: orders.total,
+    quantity: orders.quantity,
     currency: orders.currency,
     shippingAddress: orders.shippingAddress,
     trackingNumber: orders.trackingNumber,

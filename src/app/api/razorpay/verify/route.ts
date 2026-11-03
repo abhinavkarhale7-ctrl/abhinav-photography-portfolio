@@ -104,34 +104,39 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Order not found' }, { status: 404 })
   }
 
-  if (order.status !== 'pending') {
-    return NextResponse.json({ success: true, orderId })
-  }
-
   const customerName = customer?.name?.trim() || order.customerName
   const customerEmail = customer?.email?.trim() || order.email
+  const shippingAddress = customer?.address
+    ? {
+        name: customerName,
+        line1: customer.address.line1 ?? '',
+        city: customer.address.city ?? '',
+        state: customer.address.state ?? '',
+        postal_code: customer.address.postal_code ?? '',
+        country: customer.address.country ?? '',
+        phone: customer.phone,
+      }
+    : undefined
 
+  // Save what only the browser knows (name, email, address) even when the
+  // webhook already confirmed the payment. Skipping this left paid orders with
+  // an empty address whenever the webhook arrived first.
   await db
     .update(orders)
     .set({
-      status: 'processing',
       customerName,
       email: customerEmail,
-      shippingAddress: customer?.address
-        ? {
-            name: customerName,
-            line1: customer.address.line1 ?? '',
-            city: customer.address.city ?? '',
-            state: customer.address.state ?? '',
-            postal_code: customer.address.postal_code ?? '',
-            country: customer.address.country ?? '',
-            phone: customer.phone,
-          }
-        : undefined,
-      statusUpdatedAt: new Date(),
+      ...(shippingAddress ? { shippingAddress } : {}),
+      statusUpdatedAt: order.status === 'pending' ? new Date() : undefined,
       updatedAt: new Date(),
+      ...(order.status === 'pending' ? { status: 'processing' as const } : {}),
     })
     .where(eq(orders.id, orderId))
+
+  if (order.status !== 'pending') {
+    // Already confirmed (webhook won the race); details above are still saved.
+    return NextResponse.json({ success: true, orderId })
+  }
 
   await db.insert(orderStatusHistory).values({
     orderId,

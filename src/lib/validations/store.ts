@@ -5,6 +5,9 @@ export const createCheckoutSessionSchema = z.object({
   productId: z.string().uuid('Invalid product ID format'),
   sizeId: z.string().uuid('Invalid size ID format'),
   shippingMethodId: z.string().uuid('Invalid shipping method ID format'),
+  // Quantity is part of the order, not just the UI: the amount sent to the
+  // payment gateway must cover every print the customer selected.
+  quantity: z.number().int().min(1, 'Quantity must be at least 1').max(99, 'Quantity is too large').default(1),
 })
 
 export const updateOrderStatusSchema = z.object({

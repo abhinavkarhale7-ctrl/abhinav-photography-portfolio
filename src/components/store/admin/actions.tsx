@@ -137,10 +137,10 @@ export function AdminActions() {
                 {isMigrating ? (
                   <>
                     <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
-                    Migrating...
+                    Importing...
                   </>
                 ) : (
-                  'Migrate Images to Products'
+                  'Import Gallery Images as Products'
                 )}
               </Button>
               <AlertDialog>
@@ -167,7 +167,6 @@ export function AdminActions() {
                       <ul className="mt-2 list-inside list-disc">
                         <li>All product data from the database</li>
                         <li>All associated product sizes</li>
-                        <li>All products from Stripe</li>
                         <li>Order history will NOT be deleted</li>
                       </ul>
                       <div className="mt-4 space-y-2">

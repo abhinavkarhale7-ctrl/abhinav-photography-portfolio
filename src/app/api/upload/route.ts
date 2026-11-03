@@ -9,7 +9,7 @@ import { db } from '~/server/db'
 import { imageData, customImgData, galleryImages } from '~/server/db/schema'
 import { NextResponse } from 'next/server'
 
-import { products, productSizes } from '~/server/db/schema'
+import { products, productSizes, basePrintSizes } from '~/server/db/schema'
 import { slugify } from '~/lib/utils'
 
 import { revalidatePath } from 'next/cache'
@@ -17,7 +17,6 @@ import { revalidatePath } from 'next/cache'
 import { logAction } from '~/lib/logging'
 import { getSession } from '~/lib/auth/auth'
 import { uploadRateLimit, getClientIP } from '~/lib/rate-limit'
-import { getStripe } from '~/lib/stripe'
 import { waitUntil } from '@vercel/functions'
 import { extractExifData, validateExifData } from '~/lib/exif'
 import { 
@@ -232,51 +231,53 @@ export async function POST(request: Request) {
         .where(eq(imageData.uuid, keyName))
         .execute()
 
-      const [product] = await db
-        .insert(products)
-        .values({
-          name,
-          slug,
-          description,
-          imageUrl: fileUrl,
-          active: isSale,
-        })
-        .returning()
-
       if (isSale) {
-        // Check if store/stripe is available before proceeding
-        const stripe = getStripe()
-        if (!stripe) {
-          throw new Error('Store functionality is not available. Please configure Stripe credentials.')
-        }
-        
-        // Use waitUntil for Stripe operations since they can happen after response
-        const stripeProductIds: string[] = []
+        // Sizes chosen in the upload form win; otherwise use the shop's
+        // configured print sizes so the new product is immediately sellable.
+        const sizeRows =
+          printSizes.length > 0
+            ? printSizes.map((size) => ({
+                name: size.name,
+                width: size.width,
+                height: size.height,
+                basePrice: size.basePrice,
+              }))
+            : (
+                await db
+                  .select()
+                  .from(basePrintSizes)
+                  .where(eq(basePrintSizes.active, true))
+              ).map((size) => ({
+                name: size.name,
+                width: size.width,
+                height: size.height,
+                basePrice: size.sellAtPrice ?? size.basePrice,
+              }))
 
-        for (const size of printSizes) {
-          const stripeProduct = await stripe.products.create({
-            name: `${name} - ${size.name}`,
-            description: `${size.width}'x${size.height}' print of ${name}`,
-            images: [fileUrl],
+        const [product] = await db
+          .insert(products)
+          .values({
+            name,
+            slug,
+            description,
+            imageUrl: fileUrl,
+            active: true,
           })
+          .returning({ id: products.id })
 
-          const stripePrice = await stripe.prices.create({
-            product: stripeProduct.id,
-            unit_amount: size.basePrice,
-            currency: 'inr',
-          })
-
-          await db.insert(productSizes).values({
-            productId: product.id,
-            name: size.name,
-            width: size.width,
-            height: size.height,
-            basePrice: size.basePrice,
-            stripeProductId: stripeProduct.id,
-            stripePriceId: stripePrice.id,
-          })
-
-          stripeProductIds.push(stripeProduct.id)
+        if (product && sizeRows.length > 0) {
+          await db.insert(productSizes).values(
+            sizeRows.map((size) => ({
+              productId: product.id,
+              name: size.name,
+              width: size.width,
+              height: size.height,
+              basePrice: size.basePrice,
+              stripeProductId: '',
+              stripePriceId: '',
+              active: true,
+            })),
+          )
         }
       }
     } else if (bucket === 'blog') {

@@ -93,7 +93,7 @@ const defaultConfig = {
       aiGeneration: 5, // AI generation requests (expensive)
       passwordAttempt: 10, // Password attempts
       email: 5, // Email sending
-      webhook: 100, // Webhook processing (generous for Stripe)
+      webhook: 100, // Webhook processing (generous for payment provider callbacks)
       checkout: 10, // Checkout attempts
       revalidate: 20, // Cache revalidation
     },

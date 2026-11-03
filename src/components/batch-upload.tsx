@@ -43,7 +43,6 @@ interface BatchImageData {
   aiGenerated: boolean
   uuid?: string
   fileName?: string
-  stripeProductIds?: string[]
   uploadController?: AbortController
   validationResult?: import('~/lib/file-security').FileValidationResult
 }
@@ -281,7 +280,6 @@ export function BatchUpload({
           uuid: image.uuid,
           fileName: image.fileName,
           bucket: bucket,
-          stripeProductIds: image.stripeProductIds || [],
         }),
       })
     } catch (error) {

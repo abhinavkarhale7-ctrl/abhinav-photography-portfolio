@@ -1,85 +1,125 @@
 'use server'
 
 import { db } from '~/server/db'
-import { products, productSizes, basePrintSizes, imageData } from '~/server/db/schema'
+import {
+  products,
+  productSizes,
+  basePrintSizes,
+  imageData,
+} from '~/server/db/schema'
 import { eq } from 'drizzle-orm'
 import { slugify } from '~/lib/utils'
-import { requireStripe } from '~/lib/stripe'
+import { requireAdminAuth } from '~/lib/auth/permissions'
 import { revalidatePath } from 'next/cache'
 
+/**
+ * Creates a store product for every gallery image that does not already have
+ * one, using the active base print sizes. Duplicates are skipped by image URL
+ * and slug collisions are resolved, so running it twice is safe.
+ */
 export async function migrateImagesToProducts() {
-  try {
-    const stripe = requireStripe()
-    
-    const images = await db.select().from(imageData)
+  await requireAdminAuth()
 
-    const sizes = await db.select().from(basePrintSizes).where(eq(basePrintSizes.active, true))
+  try {
+    const sizes = await db
+      .select()
+      .from(basePrintSizes)
+      .where(eq(basePrintSizes.active, true))
 
     if (sizes.length === 0) {
-      return { success: false, error: 'No base print sizes found. Please add some first.' }
+      return {
+        success: false,
+        error:
+          'Add at least one print size under Costs → Print Sizes before importing products.',
+      }
     }
 
-    let migratedCount = 0
+    const images = await db.select().from(imageData)
+
+    let created = 0
+    let skipped = 0
 
     for (const image of images) {
-      // Check if product already exists
-      const existingProduct = await db.select().from(products).where(eq(products.imageUrl, image.fileUrl)).limit(1)
+      const [existing] = await db
+        .select({ id: products.id })
+        .from(products)
+        .where(eq(products.imageUrl, image.fileUrl))
+        .limit(1)
 
-      if (existingProduct.length > 0) continue
+      if (existing) {
+        skipped += 1
+        continue
+      }
 
-      // Create product
+      const baseSlug = slugify(image.name) || 'print'
+      let slug = baseSlug
+      let suffix = 1
+
+      while (true) {
+        const [taken] = await db
+          .select({ id: products.id })
+          .from(products)
+          .where(eq(products.slug, slug))
+          .limit(1)
+
+        if (!taken) break
+
+        suffix += 1
+        slug = `${baseSlug}-${suffix}`
+      }
+
       const [product] = await db
         .insert(products)
         .values({
           name: image.name,
-          slug: slugify(image.name),
-          description: image.description || 'Print',
+          slug,
+          description: image.description || 'Fine art print',
           imageUrl: image.fileUrl,
           active: true,
         })
-        .returning()
+        .returning({ id: products.id })
 
-      // Create sizes for product
-      for (const size of sizes) {
-        const stripeProduct = await stripe.products.create({
-          name: `${product.name} - ${size.name}`,
-          description: `${size.width}'x${size.height}' print of ${product.name}`,
-          images: [product.imageUrl],
-        })
+      if (!product) continue
 
-        const stripePrice = await stripe.prices.create({
-          product: stripeProduct.id,
-          unit_amount: size.basePrice,
-          currency: 'inr',
-        })
-
-        await db.insert(productSizes).values({
+      await db.insert(productSizes).values(
+        sizes.map((size) => ({
           productId: product.id,
           name: size.name,
           width: size.width,
           height: size.height,
-          basePrice: size.basePrice,
-          stripeProductId: stripeProduct.id,
-          stripePriceId: stripePrice.id,
-        })
-      }
+          // Sell at the configured selling price, never the base cost.
+          basePrice: size.sellAtPrice ?? size.basePrice,
+          stripeProductId: '',
+          stripePriceId: '',
+          active: true,
+        })),
+      )
 
-      migratedCount++
+      created += 1
     }
 
     revalidatePath('/admin/store')
+    revalidatePath('/admin/store/products')
     revalidatePath('/store')
+
+    if (created === 0) {
+      return {
+        success: true,
+        message: `No new products needed. ${skipped} image(s) already have a product.`,
+      }
+    }
 
     return {
       success: true,
-      message: `Successfully migrated ${migratedCount} images to products.`,
+      message: `Created ${created} product(s)${
+        skipped > 0 ? `, skipped ${skipped} already in the store` : ''
+      }. They are live in the store — switch any off from the Products tab.`,
     }
   } catch (error) {
-    console.error('Migration failed:', error)
+    console.error('Failed to import gallery images as products:', error)
     return {
       success: false,
-      error: 'Failed to migrate images. Check the console for more details.',
+      error: 'Failed to import images. Check the server logs for details.',
     }
   }
 }
-

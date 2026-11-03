@@ -58,11 +58,6 @@ export function UploadImg({ bucket, draftId, onImageUpload }: UploadImgProps) {
   const [isDragging, setIsDragging] = useState(false)
   const [uploadController, setUploadController] =
     useState<AbortController | null>(null)
-  const [uploadMetadata, setUploadMetadata] = useState<{
-    uuid?: string
-    fileName?: string
-    stripeProductIds?: string[]
-  }>({})
 
   // AI metadata generation state
   const aiEnabled = isAIEnabledClient()
@@ -270,9 +265,6 @@ export function UploadImg({ bucket, draftId, onImageUpload }: UploadImgProps) {
       if (response.ok) {
         const { url, fileUrl, id: uuid, fileName } = await response.json()
 
-        // Store metadata for potential cleanup
-        setUploadMetadata({ uuid, fileName })
-
         // Store the image URL for AI processing
         setImageUrl(fileUrl)
 
@@ -307,7 +299,6 @@ export function UploadImg({ bucket, draftId, onImageUpload }: UploadImgProps) {
                     uuid,
                     fileName,
                     bucket,
-                    stripeProductIds: uploadMetadata.stripeProductIds || [],
                   }),
                 }).catch(console.error)
               },
@@ -322,7 +313,6 @@ export function UploadImg({ bucket, draftId, onImageUpload }: UploadImgProps) {
                   uuid,
                   fileName,
                   bucket,
-                  stripeProductIds: uploadMetadata.stripeProductIds || [],
                 }),
               }).catch(console.error)
             }, 0)
@@ -355,7 +345,6 @@ export function UploadImg({ bucket, draftId, onImageUpload }: UploadImgProps) {
             ])
             setUploadProgress(0)
             setAiGenerated(false) // Reset AI state for new upload
-            setUploadMetadata({}) // Clear metadata on success
           } else {
             console.error('R2 Upload Error:', xhr.statusText)
             alert('Upload failed.')
@@ -660,7 +649,6 @@ export function UploadImg({ bucket, draftId, onImageUpload }: UploadImgProps) {
             }
             setUploadSuccess(false)
             setUploadedImages([])
-            setUploadMetadata({})
           }}
         >
           {uploading ? 'Cancel' : 'Clear'}

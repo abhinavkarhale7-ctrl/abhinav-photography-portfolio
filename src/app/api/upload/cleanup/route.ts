@@ -6,7 +6,6 @@ import { imageData, customImgData, products, productSizes } from '~/server/db/sc
 import { eq, like } from 'drizzle-orm'
 import { DeleteObjectCommand } from '@aws-sdk/client-s3'
 import { r2 } from '~/lib/r2'
-import { getStripe } from '~/lib/stripe'
 import { waitUntil } from '@vercel/functions'
 
 export async function DELETE(request: Request) {
@@ -20,7 +19,7 @@ export async function DELETE(request: Request) {
   }
 
   try {
-    const { uuid, bucket, fileName, stripeProductIds } = await request.json()
+    const { uuid, bucket, fileName } = await request.json()
     
     // Use waitUntil for logging since it's non-critical
     waitUntil(logAction('cleanup', `Cleaning up upload: ${uuid}, bucket: ${bucket}, fileName: ${fileName}`))
@@ -79,25 +78,6 @@ export async function DELETE(request: Request) {
       
       // Use waitUntil for logging since it's non-critical
       waitUntil(logAction('cleanup', `Deleted custom image data for: ${uuid}`))
-    }
-
-    // Use waitUntil for Stripe cleanup since it can happen after response
-    if (stripeProductIds && stripeProductIds.length > 0) {
-      const stripe = getStripe()
-      if (stripe) {
-        waitUntil(
-          Promise.all(
-            stripeProductIds.map(async (productId: string) => {
-              try {
-                await stripe.products.update(productId, { active: false })
-                await logAction('cleanup', `Deactivated Stripe product: ${productId}`)
-              } catch (error) {
-                console.error(`Failed to deactivate Stripe product ${productId}:`, error)
-              }
-            })
-          )
-        )
-      }
     }
 
     return NextResponse.json({ success: true, message: 'Cleanup completed successfully' })

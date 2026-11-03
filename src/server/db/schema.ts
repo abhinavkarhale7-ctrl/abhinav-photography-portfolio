@@ -396,7 +396,9 @@ export const productSizes = pgTable('productSizes', {
   name: text('name').notNull(), // e.g., '8x10', '11x14'
   width: integer('width').notNull(), // in inches
   height: integer('height').notNull(), // in inches
-  basePrice: integer('basePrice').notNull(), // in pennies
+  basePrice: integer('basePrice').notNull(), // in paise (INR minor units)
+  // Legacy Stripe columns. Payments run on Razorpay now and these are unused;
+  // they are kept so existing rows and migrations stay valid.
   stripeProductId: text('stripeProductId').notNull(),
   stripePriceId: text('stripePriceId').notNull(),
   active: boolean('active').default(true),
@@ -424,6 +426,7 @@ export const orders = pgTable('orders', {
   shippingMethodId: uuid('shippingMethodId').references(
     () => shippingMethods.id,
   ),
+  // Legacy column name: this stores the Razorpay order id (rzp_order_...).
   stripeSessionId: text('stripeSessionId').notNull(),
   status: text('status', { enum: orderStatuses }).notNull().default('pending'),
   customerName: text('customerName').notNull(),
@@ -472,6 +475,7 @@ export const shippingMethods = pgTable('shippingMethods', {
 export const storeCosts = pgTable('storeCosts', {
   id: serial('id').primaryKey(),
   taxRate: integer('taxRate').notNull(), // Stored as percentage * 10000 (e.g., 20.55% = 205500)
+  // Legacy column name: the payment-gateway fee (Razorpay), same * 10000 scale.
   stripeTaxRate: integer('stripeTaxRate').notNull(), // Stored as percentage * 10000 (e.g., 1.45% = 14500)
   profitPercentage: integer('profitPercentage'), // Stored as percentage * 10000 (e.g., 20.55% = 205500)
   active: boolean('active').default(true).notNull(),

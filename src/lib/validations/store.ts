@@ -8,7 +8,7 @@ export const createCheckoutSessionSchema = z.object({
 })
 
 export const updateOrderStatusSchema = z.object({
-  stripeSessionId: z.string().min(1, 'Stripe session ID is required'),
+  stripeSessionId: z.string().min(1, 'Order reference is required'),
   email: z.string().email('Invalid email format'),
   status: z.literal('processing'),
   shipping: z.object({
@@ -26,7 +26,7 @@ export const updateOrderStatusSchema = z.object({
 
 export const updateTaxRatesSchema = z.object({
   taxRate: z.number().min(0, 'Tax rate must be positive').max(1, 'Tax rate must be less than 100%'),
-  stripeRate: z.number().min(0, 'Stripe rate must be positive').max(0.1, 'Stripe rate must be less than 10%'),
+  stripeRate: z.number().min(0, 'Payment gateway rate must be positive').max(0.1, 'Payment gateway rate must be less than 10%'),
   profitPercentage: z.number().min(0, 'Profit percentage must be positive').max(1, 'Profit percentage must be less than 100%'),
 })
 

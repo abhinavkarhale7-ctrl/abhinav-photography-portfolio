@@ -319,7 +319,7 @@ export async function updateTaxRates(
       })
     })
 
-    await logAction('store', `Tax rates updated: tax=${validTaxRate}, stripe=${validStripeRate}, profit=${validProfitPercentage}`)
+    await logAction('store', `Tax rates updated: tax=${validTaxRate}, gatewayFee=${validStripeRate}, profit=${validProfitPercentage}`)
     revalidatePath('/admin/store/costs')
     return { success: true }
   } catch (error) {

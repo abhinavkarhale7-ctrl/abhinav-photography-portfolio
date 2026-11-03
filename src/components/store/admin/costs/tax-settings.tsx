@@ -106,7 +106,7 @@ export function TaxSettings({ initialTax, onUpdate }: TaxSettingsProps) {
             />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="stripe-rate">Stripe Fee (%)</Label>
+            <Label htmlFor="stripe-rate">Payment Gateway Fee (%)</Label>
             <Input
               id="stripe-rate"
               type="number"

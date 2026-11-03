@@ -3,7 +3,9 @@
 import { dbWithTx as db } from '~/server/db'
 import { orders, orderStatusHistory, users } from '~/server/db/schema'
 import { desc, eq, sql } from 'drizzle-orm'
+import { requireAdminAuth } from '~/lib/auth/permissions'
 import { isStoreEnabledServer } from '~/lib/store-utils'
+import { revalidatePath } from 'next/cache'
 
 export async function getOrders() {
   // Check if store is enabled
@@ -56,6 +58,39 @@ export async function updateOrder(
   } catch (error) {
     console.error('Failed to update order:', error)
     return { success: false, error: 'Failed to update order' }
+  }
+}
+
+/**
+ * Permanently removes an order and its status history.
+ *
+ * Order history references the order without a cascade, so the history rows
+ * must go first or the delete is rejected by the foreign key. This does not
+ * touch Razorpay: a captured payment must be refunded in the dashboard.
+ */
+export async function deleteOrder(orderId: string) {
+  await requireAdminAuth()
+
+  if (!isStoreEnabledServer()) {
+    return { success: false, error: 'Store is not available' }
+  }
+
+  try {
+    await db.transaction(async (tx) => {
+      await tx
+        .delete(orderStatusHistory)
+        .where(eq(orderStatusHistory.orderId, orderId))
+
+      await tx.delete(orders).where(eq(orders.id, orderId))
+    })
+
+    revalidatePath('/admin/store')
+    revalidatePath('/admin/store/orders')
+
+    return { success: true }
+  } catch (error) {
+    console.error('Failed to delete order:', error)
+    return { success: false, error: 'Failed to delete order' }
   }
 }
 

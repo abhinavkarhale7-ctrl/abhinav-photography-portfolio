@@ -19,11 +19,23 @@ import {
 } from '~/components/ui/select'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
-import { MoreHorizontal } from 'lucide-react'
+import { Trash2 } from 'lucide-react'
 import type { Order } from '~/server/db/schema'
-import { updateOrder } from '~/lib/actions/store/orders'
+import { deleteOrder, updateOrder } from '~/lib/actions/store/orders'
 import { OrderDetails } from '~/components/store/admin/order-details'
 import { Pagination } from '~/components/ui/pagination'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '~/components/ui/alert-dialog'
+import { toast } from 'sonner'
 
 interface AdminOrdersProps {
   initialOrders: (Order & {
@@ -200,6 +212,32 @@ export function AdminOrders({ initialOrders, userId }: AdminOrdersProps) {
     }
   }
 
+  const handleDelete = async (orderId: string) => {
+    const previousOrders = orders
+
+    // Optimistic removal so the row disappears immediately.
+    setOrders((currentOrders) =>
+      currentOrders.filter((order) => order.id !== orderId),
+    )
+    setSelectedOrder((current) => (current?.id === orderId ? null : current))
+
+    try {
+      const result = await deleteOrder(orderId)
+
+      if (!result.success) {
+        setOrders(previousOrders)
+        toast.error(result.error ?? 'Failed to delete order')
+        return
+      }
+
+      toast.success('Order deleted')
+    } catch (error) {
+      console.error('Error deleting order:', error)
+      setOrders(previousOrders)
+      toast.error('Failed to delete order')
+    }
+  }
+
   const formatDateTime = (date: Date) => {
     return new Date(date).toLocaleString('en-GB', {
       day: '2-digit',
@@ -305,9 +343,40 @@ export function AdminOrders({ initialOrders, userId }: AdminOrdersProps) {
                           ))}
                         </SelectContent>
                       </Select>
-                      <Button variant="ghost" size="icon">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                            aria-label={`Delete order ${order.orderNumber}`}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>
+                              Delete order #{order.orderNumber}?
+                            </AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This permanently removes the order and its status
+                              history from your store. It does{' '}
+                              <strong>not</strong> refund a payment — if money
+                              was captured, refund it in the Razorpay dashboard
+                              first.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleDelete(order.id)}
+                            >
+                              Delete order
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
                   </TableCell>
                 </TableRow>

@@ -305,18 +305,13 @@ export function EnhancedProductView({
             <div>
               <label className="mb-2 block text-sm font-medium">Size</label>
               <Select value={selectedSize} onValueChange={setSelectedSize}>
-                <SelectTrigger className="w-full">
+                <SelectTrigger className="w-full" aria-label="Print size">
                   <SelectValue placeholder="Choose a size" />
                 </SelectTrigger>
                 <SelectContent>
                   {sizes.map((size) => (
                     <SelectItem key={size.id} value={size.id}>
-                      <div className="flex w-full items-center justify-between">
-                        <span>{size.name}</span>
-                        <span className="ml-4 font-medium">
-                          {formatPrice(size.totalPrice)}
-                        </span>
-                      </div>
+                      {`${size.name} — ${formatPrice(size.totalPrice)}`}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -330,7 +325,7 @@ export function EnhancedProductView({
                 value={quantity.toString()}
                 onValueChange={(v) => setQuantity(parseInt(v))}
               >
-                <SelectTrigger className="w-24">
+                <SelectTrigger className="w-24" aria-label="Quantity">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -342,6 +337,15 @@ export function EnhancedProductView({
                 </SelectContent>
               </Select>
             </div>
+
+            {selectedPrintSize && (
+              <p className="text-muted-foreground text-sm">
+                Selected:{' '}
+                <span className="text-foreground font-medium">
+                  {selectedPrintSize.name} · Qty {quantity}
+                </span>
+              </p>
+            )}
           </div>
 
           {/* Actions */}

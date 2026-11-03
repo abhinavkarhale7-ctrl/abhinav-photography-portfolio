@@ -27,7 +27,7 @@ async function getProduct(slug: string) {
   const product = await db
     .select()
     .from(products)
-    .where(eq(products.slug, slug))
+    .where(and(eq(products.slug, slug), eq(products.active, true)))
     .limit(1)
   return product[0]
 }
@@ -36,7 +36,9 @@ async function getProductSizes(productId: string) {
   return await db
     .select()
     .from(productSizes)
-    .where(eq(productSizes.productId, productId))
+    .where(
+      and(eq(productSizes.productId, productId), eq(productSizes.active, true)),
+    )
 }
 
 async function getRecommendations(currentProductId: string) {
@@ -158,7 +160,7 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
           alt: product.name,
         },
       ],
-      type: 'product',
+      type: 'website',
     },
     canonicalUrl: `/store/${params.slug}`,
   })

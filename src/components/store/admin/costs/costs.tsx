@@ -59,8 +59,9 @@ export function Costs({ sizes, initialTax, shippingMethods }: CostsProps) {
 
   const [activeTab, setActiveTab] = useState('overview')
 
-  // Enable real-time updates for costs data
-  const refreshData = useRealTimeUpdates([sizes, shippingMethods], 5000) // 5 second updates
+  // Refresh on demand after a save; the costs page runs no background polling
+  // because it interrupts in-progress edits.
+  const refreshData = useRealTimeUpdates([sizes, shippingMethods], null)
 
   // Calculate metrics when data changes
   useEffect(() => {

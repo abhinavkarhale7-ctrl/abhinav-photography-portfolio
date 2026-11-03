@@ -101,6 +101,13 @@ export function PricingStrategies({ sizes, profitMargin, onUpdate }: PricingStra
     sizeMultiplier: 0.2
   })
 
+  // Prices written during this session, so the preview reflects a successful
+  // apply immediately instead of waiting for the next server refresh.
+  const [appliedPrices, setAppliedPrices] = useState<Record<string, number>>({})
+
+  const currentPrice = (size: BasePrintSize) =>
+    appliedPrices[size.id] ?? size.sellAtPrice ?? 0
+
   const getStrategySettings = (strategyId: string) => {
     switch (strategyId) {
       case 'fixed-margin': return fixedMarginSettings
@@ -123,16 +130,23 @@ export function PricingStrategies({ sizes, profitMargin, onUpdate }: PricingStra
   }
 
   const applyStrategy = async (strategyId: string, dryRun = false) => {
+    if (sizes.length === 0) {
+      toast.error('Add a print size under Costs → Print Sizes first')
+      return []
+    }
+
     const updates = sizes.map(size => ({
       id: size.id,
       newPrice: calculatePrice(size, strategyId),
-      oldPrice: size.sellAtPrice || 0,
+      oldPrice: currentPrice(size),
       basePrice: size.basePrice
     }))
 
+    const changed = updates.filter(update => update.newPrice !== update.oldPrice)
+
     if (dryRun) {
       toast.info(
-        `Preview only — ${updates.length} sizes would change. Nothing was saved.`,
+        `Preview only — ${changed.length} of ${updates.length} sizes would change. Nothing was saved.`,
       )
       return updates
     }
@@ -149,10 +163,20 @@ export function PricingStrategies({ sizes, profitMargin, onUpdate }: PricingStra
         throw new Error(result.error || 'Failed to apply pricing strategy')
       }
 
+      setAppliedPrices((previous) => ({
+        ...previous,
+        ...Object.fromEntries(updates.map((update) => [update.id, update.newPrice])),
+      }))
+
+      const strategyName = PRICING_STRATEGIES.find((s) => s.id === strategyId)?.name
+
       toast.success(
-        `${PRICING_STRATEGIES.find((s) => s.id === strategyId)?.name} strategy applied to ${updates.length} sizes`,
+        changed.length === 0
+          ? `${strategyName} already matches every size — nothing changed`
+          : `${strategyName} applied — ${changed.length} of ${updates.length} prices updated`,
       )
       onUpdate()
+      return updates
     } catch (error) {
       console.error('Failed to apply pricing strategy:', error)
       toast.error(
@@ -160,17 +184,19 @@ export function PricingStrategies({ sizes, profitMargin, onUpdate }: PricingStra
           ? error.message
           : 'Failed to apply pricing strategy',
       )
+      return []
     }
   }
 
   const previewPrices = sizes.map(size => ({
     ...size,
+    currentPrice: currentPrice(size),
     newPrice: calculatePrice(size, selectedStrategy),
     area: size.width * size.height
   }))
 
   const getImpactSummary = () => {
-    const totalOldRevenue = sizes.reduce((sum, size) => sum + (size.sellAtPrice || 0), 0)
+    const totalOldRevenue = sizes.reduce((sum, size) => sum + currentPrice(size), 0)
     const totalNewRevenue = previewPrices.reduce((sum, size) => sum + size.newPrice, 0)
     const revenueChange =
       totalOldRevenue > 0
@@ -178,9 +204,10 @@ export function PricingStrategies({ sizes, profitMargin, onUpdate }: PricingStra
         : 0
 
     return {
-      totalChanges: sizes.length,
-      revenueChange: revenueChange || 0,
-      avgPriceChange: (totalNewRevenue - totalOldRevenue) / sizes.length / 100
+      totalChanges: previewPrices.filter(size => size.newPrice !== size.currentPrice).length,
+      revenueChange: Number.isFinite(revenueChange) ? revenueChange : 0,
+      avgPriceChange:
+        sizes.length > 0 ? (totalNewRevenue - totalOldRevenue) / sizes.length / 100 : 0
     }
   }
 
@@ -406,7 +433,7 @@ export function PricingStrategies({ sizes, profitMargin, onUpdate }: PricingStra
                 <div className="flex items-center gap-6">
                   <div className="text-sm">
                     <p className="text-muted-foreground">Current</p>
-                    <p>{formatPrice(size.sellAtPrice || 0)}</p>
+                    <p>{formatPrice(size.currentPrice)}</p>
                   </div>
                   <div className="text-sm">
                     <p className="text-muted-foreground">New</p>
@@ -414,10 +441,10 @@ export function PricingStrategies({ sizes, profitMargin, onUpdate }: PricingStra
                   </div>
                   <div className="text-sm">
                     <Badge variant={
-                      size.newPrice > (size.sellAtPrice || 0) ? 'default' : 'secondary'
+                      size.newPrice > size.currentPrice ? 'default' : 'secondary'
                     }>
-                      {size.newPrice > (size.sellAtPrice || 0) ? '+' : ''}
-                      {formatPrice(size.newPrice - (size.sellAtPrice || 0))}
+                      {size.newPrice > size.currentPrice ? '+' : ''}
+                      {formatPrice(size.newPrice - size.currentPrice)}
                     </Badge>
                   </div>
                 </div>
@@ -428,19 +455,30 @@ export function PricingStrategies({ sizes, profitMargin, onUpdate }: PricingStra
           {/* Action Buttons */}
           <div className="flex gap-3 mt-6">
             <Button 
+              type="button"
               onClick={() => applyStrategy(selectedStrategy)}
               className="flex-1"
+              disabled={sizes.length === 0}
             >
               <Zap className="h-4 w-4 mr-2" />
               Apply Strategy
             </Button>
             <Button 
+              type="button"
               variant="outline"
               onClick={() => applyStrategy(selectedStrategy, true)}
+              disabled={sizes.length === 0}
             >
               Preview Only
             </Button>
           </div>
+
+          {sizes.length === 0 && (
+            <p className="text-muted-foreground mt-4 text-sm">
+              There are no print sizes yet, so there is nothing to price. Add
+              sizes in the Print Sizes tab first.
+            </p>
+          )}
         </CardContent>
       </Card>
     </div>

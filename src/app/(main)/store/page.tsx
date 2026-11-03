@@ -24,7 +24,11 @@ export const metadata: Metadata = {
 export const dynamic = 'force-dynamic'
 
 async function getProducts() {
-  const allProducts = await db.select().from(products)
+  // Only products the admin has switched on are purchasable.
+  const allProducts = await db
+    .select()
+    .from(products)
+    .where(eq(products.active, true))
   const costs = await db
     .select()
     .from(storeCosts)
@@ -40,6 +44,9 @@ async function getProducts() {
         .from(productSizes)
         .where(and(eq(productSizes.productId, product.id), eq(productSizes.active, true)))
         .orderBy(productSizes.basePrice)
+
+      // Nothing to sell without an active print size.
+      if (sizes.length === 0) return null
 
       const lowestPrice = sizes[0]?.basePrice || 0
       const taxRate = costs[0]?.taxRate || 2000 // Default to 20% if not found
@@ -60,7 +67,9 @@ async function getProducts() {
     })
   )
 
-  return productsWithPrices
+  return productsWithPrices.filter(
+    (product): product is NonNullable<typeof product> => product !== null,
+  )
 }
 
 export default async function StorePageWrapper() {

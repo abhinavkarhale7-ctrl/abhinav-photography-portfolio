@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 
 export function useRealTimeUpdates(
   dependencies: unknown[] = [],
-  interval = 10000,
+  interval: number | null = 10000,
 ) {
   const router = useRouter()
 
@@ -20,6 +20,8 @@ export function useRealTimeUpdates(
   const lastSignature = useRef(signature)
 
   useEffect(() => {
+    // A null interval keeps the manual refresh helper without polling.
+    if (interval === null) return
     const intervalId = setInterval(refreshData, interval)
     return () => clearInterval(intervalId)
   }, [refreshData, interval])

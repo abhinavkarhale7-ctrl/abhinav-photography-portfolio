@@ -1,10 +1,9 @@
 'use server'
 
-import { requireStripe } from '~/lib/stripe'
 import { requireAdminAuth } from '~/lib/auth/permissions'
 import { dbWithTx as db } from '~/server/db'
 import { orders, products, productSizes } from '~/server/db/schema'
-import { eq } from 'drizzle-orm'
+import { eq, inArray } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 
 export interface DeleteStoreResult {
@@ -14,38 +13,57 @@ export interface DeleteStoreResult {
 }
 
 export async function deleteAllProducts(): Promise<DeleteStoreResult> {
+  await requireAdminAuth()
+
   try {
-    const stripe = requireStripe()
-    
-    // Get all products with their sizes
-    const allProducts = await db
-      .select()
-      .from(products)
-      .leftJoin(productSizes, eq(products.id, productSizes.productId))
+    const allProducts = await db.select({ id: products.id }).from(products)
 
-    // Start a transaction to ensure data consistency
+    const ids = allProducts.map((product) => product.id)
+
+    if (ids.length === 0) {
+      return { success: true, message: 'There are no products to delete' }
+    }
+
+    // Products that already have orders must be kept for order history.
+    const ordered = await db
+      .selectDistinct({ productId: orders.productId })
+      .from(orders)
+
+    const orderedIds = new Set(
+      ordered
+        .map((row) => row.productId)
+        .filter((id): id is string => typeof id === 'string'),
+    )
+
+    const deletableIds = ids.filter((id) => !orderedIds.has(id))
+
     await db.transaction(async (tx) => {
-      for (const product of allProducts) {
-        if (product.productSizes) {
-          // Delete Stripe product and price
-          await stripe.products.del(product.productSizes.stripeProductId)
-        }
-
-        // Delete product sizes
+      if (deletableIds.length > 0) {
         await tx
           .delete(productSizes)
-          .where(eq(productSizes.productId, product.products.id))
+          .where(inArray(productSizes.productId, deletableIds))
+        await tx.delete(products).where(inArray(products.id, deletableIds))
+      }
 
-        // Delete the product
-        await tx.delete(products).where(eq(products.id, product.products.id))
+      if (orderedIds.size > 0) {
+        await tx
+          .update(products)
+          .set({ active: false, updatedAt: new Date() })
+          .where(
+            inArray(
+              products.id,
+              ids.filter((id) => orderedIds.has(id)),
+            ),
+          )
       }
     })
 
+    revalidatePath('/store')
     revalidatePath('/admin/store')
 
     return {
       success: true,
-      message: `Successfully deleted ${allProducts.length} products and their associated data`,
+      message: `Deleted ${deletableIds.length} product(s); ${orderedIds.size} with orders were hidden instead`,
     }
   } catch (error) {
     console.error('Error deleting store products:', error)

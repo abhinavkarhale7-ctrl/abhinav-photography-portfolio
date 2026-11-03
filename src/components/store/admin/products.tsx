@@ -15,6 +15,8 @@ import {
 import type { Product } from '~/server/db/schema'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 import {
   Table,
   TableBody,
@@ -25,46 +27,129 @@ import {
 } from '~/components/ui/table'
 import { Pagination } from '~/components/ui/pagination'
 import { memo } from 'react'
-import { Search } from 'lucide-react'
+import { Loader2, RefreshCw, Search } from 'lucide-react'
+
+import {
+  setProductActive,
+  syncProductSizesFromBase,
+} from '~/lib/actions/store/products'
+import { DeleteProductButton } from '~/components/store/admin/delete-product-button'
 
 interface AdminProductsProps {
   products: Product[]
 }
 
 // Separate the product row into its own memoized component
-const ProductRow = memo(({ product }: { product: Product }) => (
-  <TableRow key={product.id}>
-    <TableCell>
-      <div className="relative aspect-3/2 w-20">
-        <Image
-          src={product.imageUrl}
-          alt={product.name}
-          fill
-          sizes="80px"
-          loading="lazy"
-          className="rounded-md object-cover"
-        />
-      </div>
-    </TableCell>
-    <TableCell className="font-medium">{product.name}</TableCell>
-    <TableCell className="max-w-xs truncate">{product.description}</TableCell>
-    <TableCell>
-      <Switch checked={product.active} />
-    </TableCell>
-    <TableCell>
-      <Button variant="ghost" size="sm" asChild>
-        <Link href={`/admin/store/products/${product.id}`}>Edit</Link>
-      </Button>
-    </TableCell>
-  </TableRow>
-))
+const ProductRow = memo(function ProductRow({ product }: { product: Product }) {
+  const router = useRouter()
+  const [active, setActive] = useState(product.active)
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    setActive(product.active)
+  }, [product.active])
+
+  const handleToggle = async (next: boolean) => {
+    setActive(next)
+    setSaving(true)
+
+    try {
+      const result = await setProductActive(product.id, next)
+
+      if (!result.success) {
+        setActive(!next)
+        toast.error(result.error ?? 'Could not update this product')
+        return
+      }
+
+      toast.success(
+        next ? 'Product is live in the store' : 'Product hidden from the store',
+      )
+      router.refresh()
+    } catch (error) {
+      console.error('Failed to update product status:', error)
+      setActive(!next)
+      toast.error('Could not update this product')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <TableRow>
+      <TableCell>
+        <div className="relative aspect-3/2 w-20">
+          <Image
+            src={product.imageUrl}
+            alt={product.name}
+            fill
+            sizes="80px"
+            loading="lazy"
+            className="rounded-md object-cover"
+          />
+        </div>
+      </TableCell>
+      <TableCell className="font-medium">{product.name}</TableCell>
+      <TableCell className="max-w-xs truncate">{product.description}</TableCell>
+      <TableCell>
+        <div className="flex items-center gap-2">
+          <Switch
+            checked={active}
+            disabled={saving}
+            onCheckedChange={handleToggle}
+            aria-label={`${active ? 'Hide' : 'Show'} ${product.name}`}
+          />
+          <span className="text-muted-foreground text-xs">
+            {active ? 'Live' : 'Hidden'}
+          </span>
+        </div>
+      </TableCell>
+      <TableCell>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="sm" asChild>
+            <Link href={`/admin/store/products/${product.id}`}>Edit</Link>
+          </Button>
+          <DeleteProductButton
+            productId={product.id}
+            productName={product.name}
+            compact
+          />
+        </div>
+      </TableCell>
+    </TableRow>
+  )
+})
 ProductRow.displayName = 'ProductRow'
 
 export function AdminProducts({ products }: AdminProductsProps) {
+  const router = useRouter()
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(10)
+  const [syncing, setSyncing] = useState(false)
+
+  const handleSyncSizes = async () => {
+    setSyncing(true)
+    try {
+      const result = await syncProductSizesFromBase()
+
+      if (!result.success) {
+        toast.error(result.error ?? 'Could not sync print sizes')
+        return
+      }
+
+      toast.success(
+        `Applied ${result.sizes} print size${result.sizes === 1 ? '' : 's'} to ${result.products} product${result.products === 1 ? '' : 's'}`,
+      )
+      router.refresh()
+    } catch (error) {
+      console.error('Failed to sync product sizes:', error)
+      toast.error('Could not sync print sizes')
+    } finally {
+      setSyncing(false)
+    }
+  }
 
   // Filter products
   const filteredProducts = useMemo(() => {
@@ -98,7 +183,6 @@ export function AdminProducts({ products }: AdminProductsProps) {
 
   // Reset to first page when filters change
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCurrentPage(1)
   }, [searchQuery, statusFilter])
 
@@ -113,11 +197,26 @@ export function AdminProducts({ products }: AdminProductsProps) {
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+      <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 space-y-0 pb-4">
         <CardTitle>Products</CardTitle>
-        <Button asChild>
-          <Link href="/admin/store/new">Add Product</Link>
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleSyncSizes}
+            disabled={syncing || products.length === 0}
+          >
+            {syncing ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCw className="mr-2 h-4 w-4" />
+            )}
+            {syncing ? 'Syncing…' : 'Sync print sizes'}
+          </Button>
+          <Button asChild>
+            <Link href="/admin/store/new">Add Product</Link>
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Filters */}

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useEffect } from 'react'
 import {
   Card,
   CardContent,
@@ -28,6 +29,11 @@ interface PrintSizesProps {
 
 export function PrintSizes({ sizes: initialSizes, onUpdate }: PrintSizesProps) {
   const [sizes, setSizes] = useState(initialSizes)
+
+  // Keep local state in sync when the server sends fresh rows after a refresh.
+  useEffect(() => {
+    setSizes(initialSizes)
+  }, [initialSizes])
   const [newSize, setNewSize] = useState({
     name: '',
     width: '',

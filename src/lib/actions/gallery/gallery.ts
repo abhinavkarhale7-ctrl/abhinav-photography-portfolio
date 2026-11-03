@@ -239,38 +239,54 @@ export async function updateGallery(
 // Delete gallery
 export async function deleteGallery(id: string) {
   try {
+    // Read the gallery first so a missing `.returning()` row can never break
+    // the delete (and so revalidation always runs).
+    const [gallery] = await db
+      .select({ id: galleries.id, title: galleries.title, slug: galleries.slug })
+      .from(galleries)
+      .where(eq(galleries.id, id))
+      .limit(1)
+
+    if (!gallery) {
+      // Already gone: report success so stale UI entries disappear.
+      revalidatePath('/admin/galleries')
+      revalidatePath('/')
+      return { success: true, error: null }
+    }
+
     // First, get all images associated with this gallery for storage cleanup
     const imagesToDelete = await db
       .select({ fileUrl: galleryImages.fileUrl })
       .from(galleryImages)
       .where(eq(galleryImages.galleryId, id))
 
-    // Delete the gallery (this will cascade delete gallery images due to foreign key constraints)
-    const [deletedGallery] = await db
-      .delete(galleries)
-      .where(eq(galleries.id, id))
-      .returning()
+    // Delete the gallery (cascades gallery images via foreign key constraints)
+    await db.delete(galleries).where(eq(galleries.id, id))
 
-    // Clean up storage files
+    // Clean up storage files. Failures here must never undo the DB delete.
     if (imagesToDelete.length > 0) {
       const fileUrls = imagesToDelete.map((img) => img.fileUrl).filter(Boolean)
       if (fileUrls.length > 0) {
-        const storageResult = await deleteFilesFromStorage(fileUrls)
-        if (storageResult.failed.length > 0) {
-          console.warn(
-            `Failed to delete ${storageResult.failed.length} files from storage for gallery: ${deletedGallery.title}`,
+        try {
+          const storageResult = await deleteFilesFromStorage(fileUrls)
+          if (storageResult.failed.length > 0) {
+            console.warn(
+              `Failed to delete ${storageResult.failed.length} files from storage for gallery: ${gallery.title}`,
+            )
+          }
+          logAction(
+            'Gallery',
+            `Deleted ${storageResult.success.length} files from storage for gallery: ${gallery.title}`,
           )
+        } catch (storageError) {
+          console.error('Error deleting gallery storage files:', storageError)
         }
-        logAction(
-          'Gallery',
-          `Deleted ${storageResult.success.length} files from storage for gallery: ${deletedGallery.title}`,
-        )
       }
     }
 
-    logAction('Gallery', `Deleted gallery: ${deletedGallery.title}`)
+    logAction('Gallery', `Deleted gallery: ${gallery.title}`)
     revalidatePath('/admin/galleries')
-    revalidatePath(`/g/${deletedGallery.slug}`)
+    revalidatePath(`/g/${gallery.slug}`)
     revalidatePath('/') // Revalidate home page to update navigation
 
     return { success: true, error: null }

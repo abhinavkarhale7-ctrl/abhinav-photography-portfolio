@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   description: 'Manage products, orders, and store settings'
 }
 
-export const revalidate = 30 
+export const dynamic = 'force-dynamic'
 
 async function getProducts() {
   return await db.select().from(products).orderBy(desc(products.createdAt))

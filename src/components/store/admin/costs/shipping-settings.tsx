@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useEffect } from 'react'
 import {
   Card,
   CardContent,
@@ -42,6 +43,20 @@ export function ShippingSettings({
       estimatedDays: method.estimatedDays?.toString() || '',
     })),
   )
+
+  // Re-sync when the server sends fresh rows so deleted methods cannot vanish
+  // locally yet reappear after a refresh.
+  useEffect(() => {
+    setMethods(
+      initialMethods.map((method) => ({
+        id: method.id,
+        name: method.name,
+        description: method.description || '',
+        price: (method.price / 100).toFixed(2),
+        estimatedDays: method.estimatedDays?.toString() || '',
+      })),
+    )
+  }, [initialMethods])
   const [isLoading, setIsLoading] = useState(false)
   const [status, setStatus] = useState<{
     type: 'success' | 'error' | null

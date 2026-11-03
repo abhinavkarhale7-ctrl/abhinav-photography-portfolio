@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useCallback } from 'react'
+import { useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 
 export function useRealTimeUpdates(
@@ -13,16 +13,22 @@ export function useRealTimeUpdates(
     router.refresh()
   }, [router])
 
+  // Serialize the dependency values: a refresh produces new array/object
+  // identities with identical content, which previously caused an endless
+  // refresh loop. Only refresh when the content actually changes.
+  const signature = JSON.stringify(dependencies)
+  const lastSignature = useRef(signature)
+
   useEffect(() => {
     const intervalId = setInterval(refreshData, interval)
     return () => clearInterval(intervalId)
   }, [refreshData, interval])
 
-  // Also refresh when dependencies change
   useEffect(() => {
+    if (lastSignature.current === signature) return
+    lastSignature.current = signature
     refreshData()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [...dependencies, refreshData])
+  }, [signature, refreshData])
 
   return refreshData
 }

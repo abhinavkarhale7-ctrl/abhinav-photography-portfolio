@@ -45,6 +45,12 @@ export async function updatePrintSize(
   },
 ) {
   try {
+    const [existing] = await db
+      .select()
+      .from(basePrintSizes)
+      .where(eq(basePrintSizes.id, id))
+      .limit(1)
+
     const [size] = await db
       .update(basePrintSizes)
       .set({
@@ -58,11 +64,36 @@ export async function updatePrintSize(
       .where(eq(basePrintSizes.id, id))
       .returning()
 
+    // Keep product sizes in sync so the price shown on the store matches the
+    // price charged at checkout (checkout reads the base size).
+    if (existing) {
+      const effectivePrice =
+        data.sellAtPrice > 0 ? data.sellAtPrice : data.basePrice
+
+      await db
+        .update(productSizes)
+        .set({
+          name: data.name,
+          width: data.width,
+          height: data.height,
+          basePrice: effectivePrice,
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(productSizes.width, existing.width),
+            eq(productSizes.height, existing.height),
+          ),
+        )
+    }
+
     revalidatePath('/admin/store/costs')
     revalidatePath('/admin/store')
     revalidatePath('/admin/store/products')
+    revalidatePath('/store')
     return { success: true, data: size }
-  } catch (_error) {
+  } catch (error) {
+    console.error('Failed to update print size:', error)
     return { success: false, error: 'Failed to update size' }
   }
 }
@@ -283,10 +314,31 @@ export async function deletePrintSize(id: string) {
   await requireAdminAuth()
 
   try {
+    const [existing] = await db
+      .select()
+      .from(basePrintSizes)
+      .where(eq(basePrintSizes.id, id))
+      .limit(1)
+
     await db.delete(basePrintSizes).where(eq(basePrintSizes.id, id))
+
+    // Without a base size the checkout cannot price this size, so hide the
+    // matching product sizes instead of leaving them unbuyable.
+    if (existing) {
+      await db
+        .update(productSizes)
+        .set({ active: false, updatedAt: new Date() })
+        .where(
+          and(
+            eq(productSizes.width, existing.width),
+            eq(productSizes.height, existing.height),
+          ),
+        )
+    }
 
     revalidatePath('/admin/store/costs')
     revalidatePath('/admin/store/products')
+    revalidatePath('/admin/store')
     revalidatePath('/store')
 
     return { success: true }
@@ -304,15 +356,40 @@ export async function updateBulkPrices(
   try {
     await db.transaction(async (tx) => {
       for (const update of updates) {
+        const [size] = await tx
+          .select()
+          .from(basePrintSizes)
+          .where(eq(basePrintSizes.id, update.id))
+          .limit(1)
+
+        if (!size) continue
+
         await tx
           .update(basePrintSizes)
           .set({ sellAtPrice: update.sellAtPrice, updatedAt: new Date() })
           .where(eq(basePrintSizes.id, update.id))
+
+        // Mirror the new price onto product sizes with the same dimensions so
+        // the store shows exactly what Razorpay will charge.
+        await tx
+          .update(productSizes)
+          .set({
+            basePrice:
+              update.sellAtPrice > 0 ? update.sellAtPrice : size.basePrice,
+            updatedAt: new Date(),
+          })
+          .where(
+            and(
+              eq(productSizes.width, size.width),
+              eq(productSizes.height, size.height),
+            ),
+          )
       }
     })
 
     revalidatePath('/admin/store/costs')
     revalidatePath('/admin/store/products')
+    revalidatePath('/admin/store')
     revalidatePath('/store')
 
     return { success: true }

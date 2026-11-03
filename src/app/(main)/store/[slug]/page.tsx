@@ -21,7 +21,7 @@ interface Props {
   params: Promise<{ slug: string }>
 }
 
-export const revalidate = 3600
+export const dynamic = 'force-dynamic'
 
 async function getProduct(slug: string) {
   const product = await db

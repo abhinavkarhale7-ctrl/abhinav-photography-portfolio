@@ -10,7 +10,6 @@ import {
 } from '~/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs'
 import { Badge } from '~/components/ui/badge'
-import { Alert, AlertDescription } from '~/components/ui/alert'
 import { PrintSizes } from '~/components/store/admin/costs/print-sizes'
 import { TaxSettings } from '~/components/store/admin/costs/tax-settings'
 import { ShippingSettings } from '~/components/store/admin/costs/shipping-settings'
@@ -59,7 +58,6 @@ export function Costs({ sizes, initialTax, shippingMethods }: CostsProps) {
   })
 
   const [activeTab, setActiveTab] = useState('overview')
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
 
   // Enable real-time updates for costs data
   const refreshData = useRealTimeUpdates([sizes, shippingMethods], 5000) // 5 second updates
@@ -88,8 +86,8 @@ export function Costs({ sizes, initialTax, shippingMethods }: CostsProps) {
   }, [sizes, shippingMethods])
 
   const handleUpdate = useCallback(() => {
-    setHasUnsavedChanges(true)
-    // Trigger immediate data refresh
+    // Every cost change is persisted immediately by its server action, so we
+    // only need to pull fresh rows here.
     refreshData()
   }, [refreshData])
 
@@ -173,16 +171,6 @@ export function Costs({ sizes, initialTax, shippingMethods }: CostsProps) {
           </CardContent>
         </Card>
       </div>
-
-      {/* Unsaved Changes Alert */}
-      {hasUnsavedChanges && (
-        <Alert>
-          <Info className="h-4 w-4" />
-          <AlertDescription>
-            You have unsaved changes. Make sure to save your updates before navigating away.
-          </AlertDescription>
-        </Alert>
-      )}
 
       {/* Main Content Tabs */}
       <Card>

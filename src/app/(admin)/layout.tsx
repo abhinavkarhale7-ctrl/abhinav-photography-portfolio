@@ -15,6 +15,11 @@ export const metadata: Metadata = {
   description: 'Administrative dashboard for portfolio management'
 }
 
+// Admin data must never be served from a cache: otherwise deletes and edits
+// appear to "come back" after a reload.
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 interface AdminLayoutProps {
   children: ReactNode
 }

@@ -19,7 +19,9 @@ export const metadata: Metadata = {
   keywords: ['photography prints', 'wall art', 'home decor', 'fine art photography', 'photographic prints'],
 }
 
-export const revalidate = 3600 // Revalidate every hour
+// Always render fresh: prices and availability come from admin edits and must
+// never lag behind a cached copy.
+export const dynamic = 'force-dynamic'
 
 async function getProducts() {
   const allProducts = await db.select().from(products)

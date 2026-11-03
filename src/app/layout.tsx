@@ -3,8 +3,14 @@ import { Analytics } from '@vercel/analytics/react'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 import { AxiomWebVitals } from 'next-axiom'
 import { Toaster } from '~/components/ui/sonner'
+import type { Metadata } from 'next'
 
 import { Inter, Playfair_Display } from 'next/font/google'
+
+export const metadata: Metadata = {
+  // Links the web app manifest so Android installs use the AK icon.
+  manifest: '/manifest.webmanifest',
+}
 
 const inter = Inter({
   subsets: ['latin'],

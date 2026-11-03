@@ -28,5 +28,15 @@ export function getAIUnavailableReason(): string {
  * Use this in client components - only checks if AI is enabled in config, not API key availability
  */
 export function isAIEnabledClient(): boolean {
-  return siteConfig.features.aiEnabled
+  // Read the literal so the bundler inlines it; a dynamic process.env[key]
+  // lookup (as getEnv does) cannot be inlined and returns the default in the
+  // browser, which silently hid the AI controls after hydration.
+  const raw = process.env.NEXT_PUBLIC_AI_ENABLED
+
+  if (raw === undefined || raw === '') {
+    return siteConfig.features.aiEnabled
+  }
+
+  const value = raw.toLowerCase()
+  return value === 'true' || value === '1' || value === 'yes'
 }

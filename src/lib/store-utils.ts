@@ -1,11 +1,22 @@
 import { siteConfig } from '~/config/site'
 
 /**
- * Checks if the store is enabled on the client side
- * Only checks siteConfig to avoid leaking environment variables
+ * Checks if the store is enabled on the client side.
+ *
+ * NEXT_PUBLIC_* values must be read with a literal member expression so the
+ * bundler can inline them. `getEnv('NEXT_PUBLIC_STORE_ENABLED', ...)` uses a
+ * dynamic key, which cannot be inlined, so in the browser it always fell back
+ * to the default (false) and the nav dropped the Store link after hydration.
  */
 export function isStoreEnabledClient(): boolean {
-  return siteConfig.features.storeEnabled
+  const raw = process.env.NEXT_PUBLIC_STORE_ENABLED
+
+  if (raw === undefined || raw === '') {
+    return siteConfig.features.storeEnabled
+  }
+
+  const value = raw.toLowerCase()
+  return value === 'true' || value === '1' || value === 'yes'
 }
 
 /**

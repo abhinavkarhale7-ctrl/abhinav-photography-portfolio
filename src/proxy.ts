@@ -75,5 +75,7 @@ function getClientIP(request: NextRequest): string {
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/store/:path*', '/api/files/:path*'],
+  // Admin area and admin file APIs only. The storefront (/store) is public and
+  // must never be caught by the admin auth gate above.
+  matcher: ['/admin/:path*', '/api/files/:path*'],
 }

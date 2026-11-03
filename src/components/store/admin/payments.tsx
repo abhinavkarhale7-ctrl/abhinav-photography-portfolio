@@ -101,7 +101,7 @@ export function PaymentsPanel({
             <div className="divide-y">
               <InfoRow label="Connection">
                 {configured ? (
-                  <Badge className="gap-1 bg-green-600 hover:bg-green-600">
+                  <Badge className="gap-1 bg-green-600 text-white hover:bg-green-600">
                     <CheckCircle2 className="h-3 w-3" />
                     Connected
                   </Badge>
@@ -115,9 +115,9 @@ export function PaymentsPanel({
 
               <InfoRow label="Mode">
                 {mode === 'live' ? (
-                  <Badge className="bg-green-600 hover:bg-green-600">Live</Badge>
+                  <Badge className="bg-green-600 text-white hover:bg-green-600">Live</Badge>
                 ) : mode === 'test' ? (
-                  <Badge className="bg-amber-500 hover:bg-amber-500">Test</Badge>
+                  <Badge className="bg-amber-500 text-white hover:bg-amber-500">Test</Badge>
                 ) : (
                   <Badge variant="secondary">Unknown</Badge>
                 )}

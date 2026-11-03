@@ -85,6 +85,7 @@ async function getPaymentSettings() {
     .limit(1)
 
   const keyId = process.env.RAZORPAY_KEY_ID ?? ''
+  const publicKeyId = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ?? keyId
   const configured = Boolean(keyId && process.env.RAZORPAY_KEY_SECRET)
   const mode: 'live' | 'test' | 'unknown' = keyId.startsWith('rzp_live_')
     ? 'live'
@@ -100,6 +101,8 @@ async function getPaymentSettings() {
     // Same fallback the storefront uses when no cost row exists.
     gatewayFeePercent: (costs[0]?.gatewayFee ?? 150) / 10000,
     storeEnabled: isStoreEnabledServer(),
+    // Orders use the server key; the browser opens the public key.
+    keyMismatch: Boolean(keyId && publicKeyId && keyId !== publicKeyId),
   }
 }
 

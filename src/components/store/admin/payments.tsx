@@ -27,6 +27,8 @@ export interface PaymentsPanelProps {
   /** Percent, e.g. 1.5 for 1.5% */
   gatewayFeePercent: number
   storeEnabled: boolean
+  /** Server key and browser key come from different Razorpay accounts. */
+  keyMismatch: boolean
 }
 
 function InfoRow({
@@ -50,11 +52,26 @@ export function PaymentsPanel({
   maskedKeyId,
   gatewayFeePercent,
   storeEnabled,
+  keyMismatch,
 }: PaymentsPanelProps) {
   const fee = Number(gatewayFeePercent.toFixed(2))
 
   return (
     <div className="space-y-6">
+      {keyMismatch && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Key mismatch — checkout will fail</AlertTitle>
+          <AlertDescription>
+            <code>NEXT_PUBLIC_RAZORPAY_KEY_ID</code> and{' '}
+            <code>RAZORPAY_KEY_ID</code> belong to different Razorpay accounts.
+            Orders are created with the server key but the browser opens the
+            other one, so the payment signature will never verify. Set both to
+            the same key id.
+          </AlertDescription>
+        </Alert>
+      )}
+
       {mode === 'test' && (
         <Alert variant="destructive" className="border-amber-500 bg-amber-50 text-amber-900">
           <FlaskConical className="h-4 w-4" />

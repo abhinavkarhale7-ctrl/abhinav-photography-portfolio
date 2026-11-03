@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useEffect } from 'react'
+import { useRef } from 'react'
 import {
   Card,
   CardContent,
@@ -30,10 +31,25 @@ interface PrintSizesProps {
 export function PrintSizes({ sizes: initialSizes, onUpdate }: PrintSizesProps) {
   const [sizes, setSizes] = useState(initialSizes)
 
-  // Keep local state in sync when the server sends fresh rows after a refresh.
+  // Keep the list in sync with the server without clobbering in-progress edits.
+  const serverSignature = JSON.stringify(
+    initialSizes.map((size) => [
+      size.id,
+      size.name,
+      size.width,
+      size.height,
+      size.basePrice,
+      size.sellAtPrice,
+      size.active,
+    ]),
+  )
+  const seenSignature = useRef<string | null>(null)
+
   useEffect(() => {
+    if (seenSignature.current === serverSignature) return
+    seenSignature.current = serverSignature
     setSizes(initialSizes)
-  }, [initialSizes])
+  }, [serverSignature, initialSizes])
   const [newSize, setNewSize] = useState({
     name: '',
     width: '',
@@ -72,9 +88,13 @@ export function PrintSizes({ sizes: initialSizes, onUpdate }: PrintSizesProps) {
         basePrice: '',
         sellAtPrice: '',
       })
+      toast.success('Print size added')
       onUpdate?.()
     } catch (error) {
       console.error(error)
+      toast.error(
+        error instanceof Error ? error.message : 'Failed to add print size',
+      )
     }
   }
 
@@ -109,9 +129,13 @@ export function PrintSizes({ sizes: initialSizes, onUpdate }: PrintSizesProps) {
         sizes.map((size) => (size.id === editingSize.id ? result.data : size)),
       )
       setEditingSize(null)
+      toast.success('Print size updated')
       onUpdate?.()
     } catch (error) {
       console.error(error)
+      toast.error(
+        error instanceof Error ? error.message : 'Failed to update print size',
+      )
     }
   }
 

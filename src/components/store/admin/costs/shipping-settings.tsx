@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useEffect } from 'react'
+import { useRef } from 'react'
 import {
   Card,
   CardContent,
@@ -44,9 +45,25 @@ export function ShippingSettings({
     })),
   )
 
-  // Re-sync when the server sends fresh rows so deleted methods cannot vanish
-  // locally yet reappear after a refresh.
+  // Re-sync when the server sends genuinely new rows. Comparing a content
+  // signature (not just the array identity) prevents the 5s poll from wiping
+  // edits the admin is still typing.
+  const serverSignature = JSON.stringify(
+    initialMethods.map((method) => [
+      method.id,
+      method.name,
+      method.description,
+      method.price,
+      method.estimatedDays,
+      method.active,
+    ]),
+  )
+  const seenSignature = useRef<string | null>(null)
+
   useEffect(() => {
+    if (seenSignature.current === serverSignature) return
+    seenSignature.current = serverSignature
+
     setMethods(
       initialMethods.map((method) => ({
         id: method.id,
@@ -56,7 +73,7 @@ export function ShippingSettings({
         estimatedDays: method.estimatedDays?.toString() || '',
       })),
     )
-  }, [initialMethods])
+  }, [serverSignature, initialMethods])
   const [isLoading, setIsLoading] = useState(false)
   const [status, setStatus] = useState<{
     type: 'success' | 'error' | null

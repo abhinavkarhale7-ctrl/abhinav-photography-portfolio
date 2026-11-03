@@ -131,6 +131,9 @@ export function PricingStrategies({ sizes, profitMargin, onUpdate }: PricingStra
     }))
 
     if (dryRun) {
+      toast.info(
+        `Preview only — ${updates.length} sizes would change. Nothing was saved.`,
+      )
       return updates
     }
 
@@ -147,11 +150,16 @@ export function PricingStrategies({ sizes, profitMargin, onUpdate }: PricingStra
       }
 
       toast.success(
-        `${PRICING_STRATEGIES.find((s) => s.id === strategyId)?.name} strategy applied`,
+        `${PRICING_STRATEGIES.find((s) => s.id === strategyId)?.name} strategy applied to ${updates.length} sizes`,
       )
       onUpdate()
-    } catch (_error) {
-      toast.error('Failed to apply pricing strategy')
+    } catch (error) {
+      console.error('Failed to apply pricing strategy:', error)
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : 'Failed to apply pricing strategy',
+      )
     }
   }
 

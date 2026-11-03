@@ -1,7 +1,7 @@
 'use server'
 
 import { requireAdminAuth } from '~/lib/auth/permissions'
-import { db } from '~/server/db'
+import { db, dbWithTx } from '~/server/db'
 import { basePrintSizes, productSizes } from '~/server/db/schema'
 import { revalidatePath } from 'next/cache'
 import { eq, and, or, inArray } from 'drizzle-orm'
@@ -348,13 +348,51 @@ export async function deletePrintSize(id: string) {
   }
 }
 
+export async function bulkDeactivatePrintSizes(ids: string[]) {
+  await requireAdminAuth()
+
+  try {
+    const sizes = await db
+      .select()
+      .from(basePrintSizes)
+      .where(inArray(basePrintSizes.id, ids))
+
+    await db
+      .update(basePrintSizes)
+      .set({ active: false, updatedAt: new Date() })
+      .where(inArray(basePrintSizes.id, ids))
+
+    for (const size of sizes) {
+      await db
+        .update(productSizes)
+        .set({ active: false, updatedAt: new Date() })
+        .where(
+          and(
+            eq(productSizes.width, size.width),
+            eq(productSizes.height, size.height),
+          ),
+        )
+    }
+
+    revalidatePath('/admin/store/costs')
+    revalidatePath('/admin/store/products')
+    revalidatePath('/admin/store')
+    revalidatePath('/store')
+
+    return { success: true }
+  } catch (error) {
+    console.error('Failed to deactivate print sizes:', error)
+    return { success: false, error: 'Failed to deactivate print sizes' }
+  }
+}
+
 export async function updateBulkPrices(
   updates: Array<{ id: string; sellAtPrice: number }>,
 ) {
   await requireAdminAuth()
 
   try {
-    await db.transaction(async (tx) => {
+    await dbWithTx.transaction(async (tx) => {
       for (const update of updates) {
         const [size] = await tx
           .select()

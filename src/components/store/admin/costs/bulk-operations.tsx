@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Alert, AlertDescription } from '~/components/ui/alert'
 import type { BasePrintSize } from '~/server/db/schema'
 import { formatPrice } from '~/lib/utils'
-import { applyPrintSizeTemplate, applyPrintSizesToProducts } from '~/lib/actions/store/sizes'
+import { applyPrintSizeTemplate, applyPrintSizesToProducts, updateBulkPrices, bulkDeactivatePrintSizes } from '~/lib/actions/store/sizes'
 import { getAllProducts } from '~/lib/actions/store/products'
 import { 
   Upload, 
@@ -177,36 +177,69 @@ export function BulkOperations({ sizes, onUpdate }: BulkOperationsProps) {
     setProcessing(true)
     try {
       const selectedItems = sizes.filter(s => selectedSizes.has(s.id))
-      
-      switch (operation.type) {
-        case 'price-increase':
-          const increaseAmount = Number(operation.value)
-          // Apply price increase logic
-          toast.success(`Increased prices for ${selectedItems.length} items by ${increaseAmount}%`)
-          break
-          
-        case 'price-decrease':
-          const decreaseAmount = Number(operation.value)
-          // Apply price decrease logic
-          toast.success(`Decreased prices for ${selectedItems.length} items by ${decreaseAmount}%`)
-          break
-          
-        case 'profit-margin':
-          const newMargin = Number(operation.value)
-          // Apply new profit margin logic
-          toast.success(`Updated profit margin to ${newMargin}% for ${selectedItems.length} items`)
-          break
-          
-        case 'deactivate':
-          // Deactivate selected items
-          toast.success(`Deactivated ${selectedItems.length} items`)
-          break
+
+      if (operation.type === 'deactivate') {
+        const result = await bulkDeactivatePrintSizes(
+          selectedItems.map(size => size.id),
+        )
+
+        if (!result.success) {
+          throw new Error(result.error || 'Failed to deactivate sizes')
+        }
+
+        toast.success(`Deactivated ${selectedItems.length} items`)
+        onUpdate()
+        setSelectedSizes(new Set())
+        return
       }
-      
+
+      const percent = Number(operation.value)
+
+      if (!Number.isFinite(percent) || percent < 0) {
+        toast.error('Enter a valid positive number')
+        return
+      }
+
+      const effectivePrice = (size: BasePrintSize) =>
+        size.sellAtPrice && size.sellAtPrice > 0
+          ? size.sellAtPrice
+          : size.basePrice
+
+      const updates = selectedItems.map(size => {
+        let newPrice = effectivePrice(size)
+
+        if (operation.type === 'price-increase') {
+          newPrice = Math.round(effectivePrice(size) * (1 + percent / 100))
+        } else if (operation.type === 'price-decrease') {
+          newPrice = Math.round(effectivePrice(size) * (1 - percent / 100))
+        } else if (operation.type === 'profit-margin') {
+          newPrice = Math.round(size.basePrice * (1 + percent / 100))
+        }
+
+        return { id: size.id, sellAtPrice: Math.max(0, newPrice) }
+      })
+
+      const result = await updateBulkPrices(updates)
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to apply bulk operation')
+      }
+
+      const message =
+        operation.type === 'price-increase'
+          ? `Increased prices for ${selectedItems.length} items by ${percent}%`
+          : operation.type === 'price-decrease'
+            ? `Decreased prices for ${selectedItems.length} items by ${percent}%`
+            : `Updated profit margin to ${percent}% for ${selectedItems.length} items`
+
+      toast.success(message)
       onUpdate()
       setSelectedSizes(new Set())
-    } catch (_error) {
-      toast.error('Failed to apply bulk operation')
+    } catch (error) {
+      console.error('Bulk operation failed:', error)
+      toast.error(
+        error instanceof Error ? error.message : 'Failed to apply bulk operation',
+      )
     } finally {
       setProcessing(false)
     }

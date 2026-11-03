@@ -213,9 +213,11 @@ export function StorePage({ initialProducts }: StorePageProps) {
                 No prints found
               </h3>
               <p className="mb-4 text-gray-600">
-                {searchQuery
-                  ? `No prints match your search for "${searchQuery}"`
-                  : 'No prints match your current filters'}
+                {products.length === 0
+                  ? 'No prints are available just yet. New work is added regularly, so check back soon.'
+                  : searchQuery
+                    ? `No prints match your search for "${searchQuery}"`
+                    : 'No prints match your current filters'}
               </p>
               {(searchQuery ||
                 filters.priceRange[0] !== filterOptions.minPrice ||

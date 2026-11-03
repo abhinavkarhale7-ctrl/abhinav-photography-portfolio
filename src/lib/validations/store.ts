@@ -24,10 +24,14 @@ export const updateOrderStatusSchema = z.object({
   }).optional(),
 })
 
+// The Costs form and the updateTaxRates action both work in whole percentages
+// (0-100): the action stores percentage * 10000 and the UI divides it back.
+// These caps previously used fractions (max 1 / max 0.1), so every realistic
+// value was rejected and the tax settings could never be saved.
 export const updateTaxRatesSchema = z.object({
-  taxRate: z.number().min(0, 'Tax rate must be positive').max(1, 'Tax rate must be less than 100%'),
-  stripeRate: z.number().min(0, 'Payment gateway rate must be positive').max(0.1, 'Payment gateway rate must be less than 10%'),
-  profitPercentage: z.number().min(0, 'Profit percentage must be positive').max(1, 'Profit percentage must be less than 100%'),
+  taxRate: z.number().min(0, 'Tax rate must be positive').max(100, 'Tax rate cannot exceed 100%'),
+  stripeRate: z.number().min(0, 'Payment gateway rate must be positive').max(100, 'Payment gateway rate cannot exceed 100%'),
+  profitPercentage: z.number().min(0, 'Profit percentage must be positive').max(100, 'Profit percentage cannot exceed 100%'),
 })
 
 export const emailSchema = z.object({

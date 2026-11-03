@@ -236,13 +236,13 @@ Implemented via [`src/middleware.ts`](src/middleware.ts):
 
 ```csp
 default-src 'self';
-script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com;
+script-src 'self' 'unsafe-inline' 'unsafe-eval' https://checkout.razorpay.com;
 style-src 'self' 'unsafe-inline';
 media-src 'self' data: blob: https://*.r2.cloudflarestorage.com ${NEXT_PUBLIC_STREAM_BUCKET_URL} [NEXT_PUBLIC_MEDIA_HOSTS];
 img-src 'self' data: https:;
 font-src 'self' data:;
-connect-src 'self' https://api.stripe.com;
-frame-src https://js.stripe.com;
+connect-src 'self' https://api.razorpay.com https://lumberjack.razorpay.com;
+frame-src https://api.razorpay.com https://checkout.razorpay.com;
 ```
 
 #### Configuring Media Hosts

@@ -680,7 +680,7 @@ export function UploadImg({ bucket, draftId, onImageUpload }: UploadImgProps) {
               </Button>
             </div>
             {printSizes.map((size, index) => (
-              <div key={index} className="grid grid-cols-4 gap-4">
+              <div key={index} className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <div>
                   <Label>Size Name</Label>
                   <Input

@@ -10,6 +10,7 @@ interface GridViewProps {
   onSelect: (id: string) => void
   onToggleVisibility: (id: string) => void
   onDelete: (id: string) => void
+  onEdit: (id: string) => void
   onMove: (id: string, offset: number) => void
 }
 
@@ -19,6 +20,7 @@ export function GridView({
   onSelect,
   onToggleVisibility,
   onDelete,
+  onEdit,
   onMove,
   isProcessing = false,
 }: GridViewProps) {
@@ -33,6 +35,7 @@ export function GridView({
             onSelect={() => onSelect(String(image.id))}
             onToggleVisibility={onToggleVisibility}
             onDelete={onDelete}
+            onEdit={() => onEdit(String(image.id))}
             onMoveUp={index > 0 ? () => onMove((String(image.id)), -1) : undefined}
             onMoveDown={
               index < images.length - 1 ? () => onMove((String(image.id)), 1) : undefined

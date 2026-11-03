@@ -227,7 +227,11 @@ export function useImages({
 
   // Function to update image metadata
   const updateImage = useCallback(
-    async (id: number, data: Partial<PortfolioImageData>) => {
+    async (
+      id: number,
+      data: Partial<PortfolioImageData>,
+    ): Promise<boolean> => {
+      const previousImages = images
       // Optimistically update the UI
       setImages((prevImages) => prevImages.map((img) => (img.id === id ? { ...img, ...data } : img)))
 
@@ -248,17 +252,19 @@ export function useImages({
         // Refresh images to ensure we have the latest data
         fetchImages(false)
 
-        toast('Success: Image updated successfully')
+        toast.success('Image details updated')
+        return true
       } catch (err) {
         console.error('Error updating image:', err)
 
         // Revert to previous state on error
-        fetchImages()
+        setImages(previousImages)
 
-        toast(err instanceof Error ? err.message : 'Failed to update image')
+        toast.error(err instanceof Error ? err.message : 'Failed to update image')
+        return false
       }
     },
-    [fetchImages],
+    [fetchImages, images],
   )
 
   return {

@@ -21,7 +21,7 @@ import {
   Calculator, 
   TrendingUp, 
   Package, 
-  DollarSign, 
+  IndianRupee, 
   AlertTriangle,
   CheckCircle,
   Info
@@ -116,7 +116,6 @@ export function Costs({ sizes, initialTax, shippingMethods }: CostsProps) {
                 healthStatus.color === 'warning' ? 'bg-yellow-100 text-yellow-600' :
                 'bg-red-100 text-red-600'
               }`}>
-                <healthStatus.icon className="h-5 w-5" />
                 <HealthIcon className="h-5 w-5" />
               </div>
             </div>
@@ -131,10 +130,10 @@ export function Costs({ sizes, initialTax, shippingMethods }: CostsProps) {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Avg. Profit/Print</p>
-                <p className="text-2xl font-bold">₹{metrics.averageProfit.toFixed(2)}</p>
+                <p className="text-2xl font-bold">â‚¹{metrics.averageProfit.toFixed(2)}</p>
               </div>
               <div className="p-2 bg-blue-100 text-blue-600 rounded-full">
-                <DollarSign className="h-5 w-5" />
+                <IndianRupee className="h-5 w-5" />
               </div>
             </div>
             <p className="text-xs text-muted-foreground mt-2">Per size option</p>
@@ -192,7 +191,7 @@ export function Costs({ sizes, initialTax, shippingMethods }: CostsProps) {
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-6">
+            <TabsList className="grid h-auto w-full grid-cols-3 gap-1 sm:grid-cols-6">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="sizes">Print Sizes</TabsTrigger>
               <TabsTrigger value="pricing">Pricing</TabsTrigger>

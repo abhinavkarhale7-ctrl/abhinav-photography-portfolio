@@ -5,6 +5,7 @@ import Masonry from 'react-masonry-css'
 import { ArrowDownUp, Grid, LayoutGrid, List, Loader2 } from 'lucide-react'
 
 import { ImageItem } from '~/components/image-gallery/image-item'
+import { ImageDetailsDialog, type ImageDetailsValues } from '~/components/image-gallery/image-details-dialog'
 import { ReorderPanel } from '~/components/image-gallery/reorder-panel'
 import { EmptyState } from '~/components/image-gallery/empty-state'
 import { ToggleGroup, ToggleGroupItem } from '~/components/ui/toggle-group'
@@ -36,6 +37,9 @@ export function ImageGallery({
 }: ImageGalleryProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('masonry')
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
+  const [editingImage, setEditingImage] = useState<PortfolioImageData | null>(
+    null,
+  )
 
   const {
     images,
@@ -45,6 +49,7 @@ export function ImageGallery({
     updateImagesOrder,
     toggleImageVisibility,
     deleteImage,
+    updateImage,
   } = useImages({
     initialImages,
     visibleOnly,
@@ -55,6 +60,24 @@ export function ImageGallery({
   // Handle image selection
   const handleImageSelect = (id: string) => {
     setSelectedImage((prevId) => (prevId === id ? null : id))
+  }
+
+  const handleOpenImageEditor = (id: string) => {
+    const image = images.find((item) => item.id.toString() === id)
+    if (image) setEditingImage(image)
+  }
+
+  const handleSaveImageDetails = async (
+    id: number,
+    values: ImageDetailsValues,
+  ) => {
+    const saved = await updateImage(id, values)
+    if (saved) {
+      setEditingImage((current) =>
+        current && current.id === id ? { ...current, ...values } : current,
+      )
+    }
+    return saved
   }
 
   // Breakpoints for masonry layout
@@ -150,6 +173,7 @@ export function ImageGallery({
                 onSelect={() => handleImageSelect(image.id.toString())}
                 onToggleVisibility={() => toggleImageVisibility(image.id)}
                 onDelete={() => deleteImage(image.id)}
+                onEdit={() => handleOpenImageEditor(image.id.toString())}
                 onMoveUp={
                   index > 0
                     ? () => {
@@ -191,6 +215,7 @@ export function ImageGallery({
             toggleImageVisibility(Number.parseInt(id))
           }
           onDelete={(id) => deleteImage(Number.parseInt(id))}
+          onEdit={handleOpenImageEditor}
           isProcessing={isSaving}
           onMove={(id, offset) => {
             const index = images.findIndex((img) => img.id.toString() === id)
@@ -217,6 +242,7 @@ export function ImageGallery({
             toggleImageVisibility(Number.parseInt(id))
           }
           onDelete={(id) => deleteImage(Number.parseInt(id))}
+          onEdit={handleOpenImageEditor}
           isProcessing={isSaving}
           onMove={(id, toPosition) => {
             const fromIndex = images.findIndex(
@@ -240,6 +266,15 @@ export function ImageGallery({
           isLoading={isLoading || isSaving}
         />
       )}
+
+      <ImageDetailsDialog
+        image={editingImage}
+        open={editingImage !== null}
+        onOpenChange={(open) => {
+          if (!open) setEditingImage(null)
+        }}
+        onSave={handleSaveImageDetails}
+      />
     </div>
   )
 }

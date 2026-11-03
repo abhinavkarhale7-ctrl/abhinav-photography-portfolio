@@ -8,6 +8,7 @@ import {
   Eye,
   EyeOff,
   MoreVertical,
+  Pencil,
   Trash2,
   ZoomIn,
 } from 'lucide-react'
@@ -33,6 +34,7 @@ interface ImageItemProps {
   onSelect?: () => void
   onToggleVisibility: (id: string) => void
   onDelete: (id: string) => void
+  onEdit?: () => void
   onMoveUp?: () => void
   onMoveDown?: () => void
   showOrderControls?: boolean
@@ -47,6 +49,7 @@ export function ImageItem({
   onSelect,
   onToggleVisibility,
   onDelete,
+  onEdit,
   onMoveUp,
   onMoveDown,
   showOrderControls = false,
@@ -97,12 +100,17 @@ export function ImageItem({
         </div>
 
         <CardContent className={compact ? 'p-2' : 'p-3'}>
-          <div className="mb-2 flex items-start justify-between">
-            <div>
+          <div className="mb-2 flex items-start justify-between gap-2">
+            <div className="min-w-0">
               <h3 className="truncate text-base font-medium">{image.name}</h3>
-              {!compact && (
-                <p className="text-xs text-muted-foreground">
+              {!compact && image.tags && (
+                <p className="truncate text-xs text-muted-foreground">
                   {image.tags}
+                </p>
+              )}
+              {!compact && image.description && (
+                <p className="line-clamp-2 text-xs text-muted-foreground">
+                  {image.description}
                 </p>
               )}
             </div>
@@ -120,6 +128,18 @@ export function ImageItem({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
+                  {onEdit && (
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onEdit()
+                      }}
+                      disabled={isProcessing}
+                    >
+                      <Pencil className="mr-2 h-4 w-4" />
+                      <span>Edit details</span>
+                    </DropdownMenuItem>
+                  )}
                   {onMoveUp && (
                     <DropdownMenuItem
                       onClick={(e) => {
@@ -190,19 +210,36 @@ export function ImageItem({
             </div>
 
             {!showOrderControls && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onDelete(String(image.id))
-                }}
-                disabled={isProcessing}
-                aria-label="Delete image"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </Button>
+              <div className="flex items-center gap-1">
+                {onEdit && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onEdit()
+                    }}
+                    disabled={isProcessing}
+                    aria-label="Edit image details"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </Button>
+                )}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onDelete(String(image.id))
+                  }}
+                  disabled={isProcessing}
+                  aria-label="Delete image"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              </div>
             )}
           </div>
         </CardContent>

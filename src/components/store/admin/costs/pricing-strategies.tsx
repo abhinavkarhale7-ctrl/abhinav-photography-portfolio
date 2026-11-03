@@ -18,7 +18,7 @@ import {
   TrendingUp, 
   Zap, 
   BarChart3,
-  DollarSign,
+  IndianRupee,
   RefreshCw
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -66,7 +66,7 @@ const PRICING_STRATEGIES: PricingStrategy[] = [
     id: 'value-based',
     name: 'Value-Based',
     description: 'Price based on perceived value and size premium',
-    icon: DollarSign,
+    icon: IndianRupee,
     calculator: (basePrice, { baseMultiplier, sizeMultiplier, area }) => {
       const sizeBonus = Math.sqrt(area / 100) * sizeMultiplier
       return basePrice * (baseMultiplier + sizeBonus)
@@ -132,7 +132,7 @@ export function PricingStrategies({ sizes, profitMargin, onUpdate }: PricingStra
 
     if (dryRun) {
       toast.info(
-        `Preview only — ${updates.length} sizes would change. Nothing was saved.`,
+        `Preview only â€” ${updates.length} sizes would change. Nothing was saved.`,
       )
       return updates
     }
@@ -377,7 +377,7 @@ export function PricingStrategies({ sizes, profitMargin, onUpdate }: PricingStra
                       {formatPrice(Math.abs(impact.avgPriceChange * 100))}
                     </p>
                   </div>
-                  <DollarSign className="h-6 w-6 text-muted-foreground" />
+                  <IndianRupee className="h-6 w-6 text-muted-foreground" />
                 </div>
               </CardContent>
             </Card>
@@ -401,7 +401,7 @@ export function PricingStrategies({ sizes, profitMargin, onUpdate }: PricingStra
               <div key={size.id} className="flex items-center justify-between p-3 rounded border">
                 <div>
                   <p className="font-medium">{size.name}</p>
-                  <p className="text-sm text-muted-foreground">{size.width}&quot;×{size.height}&quot;</p>
+                  <p className="text-sm text-muted-foreground">{size.width}&quot;Ã—{size.height}&quot;</p>
                 </div>
                 <div className="flex items-center gap-6">
                   <div className="text-sm">

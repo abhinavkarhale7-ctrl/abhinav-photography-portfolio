@@ -936,7 +936,7 @@ export function BatchUpload({
                                 {image.printSizes.map((size, sizeIndex) => (
                                   <div
                                     key={sizeIndex}
-                                    className="grid grid-cols-4 gap-2"
+                                    className="grid grid-cols-2 gap-2 sm:grid-cols-4"
                                   >
                                     <Input
                                       value={size.name}

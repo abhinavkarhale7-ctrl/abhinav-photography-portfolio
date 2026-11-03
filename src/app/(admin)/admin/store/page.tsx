@@ -82,7 +82,7 @@ export default async function AdminStorePage() {
           <p className="text-gray-600 mb-8">Manage your store products, orders, and analytics</p>
           
           <Tabs defaultValue="analytics" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid h-auto w-full grid-cols-2 gap-1 sm:grid-cols-4">
               <TabsTrigger value="analytics">Analytics</TabsTrigger>
               <TabsTrigger value="orders">Orders</TabsTrigger>
               <TabsTrigger value="products">Products</TabsTrigger>

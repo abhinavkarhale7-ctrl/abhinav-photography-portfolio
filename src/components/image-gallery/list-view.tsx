@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
-import { ArrowDown, ArrowUp, Eye, EyeOff, Trash2 } from 'lucide-react'
+import { ArrowDown, ArrowUp, Eye, EyeOff, Pencil, Trash2 } from 'lucide-react'
 
 import {
   Table,
@@ -24,6 +24,7 @@ interface ListViewProps {
   onSelect: (id: string) => void
   onToggleVisibility: (id: string) => void
   onDelete: (id: string) => void
+  onEdit: (id: string) => void
   onMove: (id: string, toPosition: number) => void
 }
 
@@ -33,6 +34,7 @@ export function ListView({
   onSelect,
   onToggleVisibility,
   onDelete,
+  onEdit,
   onMove,
   isProcessing = false,
 }: ListViewProps) {
@@ -168,6 +170,16 @@ export function ListView({
                   className="flex space-x-1"
                   onClick={(e) => e.stopPropagation()}
                 >
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    disabled={isProcessing}
+                    onClick={() => onEdit(String(image.id))}
+                    aria-label="Edit image details"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
                   <Button
                     variant="ghost"
                     size="icon"

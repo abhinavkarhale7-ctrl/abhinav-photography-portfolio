@@ -165,7 +165,7 @@ export function PrintSizes({ sizes: initialSizes, onUpdate }: PrintSizesProps) {
       </CardHeader>
       <CardContent>
         <div className="space-y-6">
-          <div className="grid grid-cols-4 gap-4 rounded-lg border p-4">
+          <div className="grid grid-cols-1 gap-4 rounded-lg border p-4 sm:grid-cols-2 lg:grid-cols-4">
             <div>
               <Label>Size Name</Label>
               <Input
@@ -217,7 +217,7 @@ export function PrintSizes({ sizes: initialSizes, onUpdate }: PrintSizesProps) {
                 placeholder="Leave empty for profit-based pricing"
               />
             </div>
-            <Button onClick={handleAddSize} className="col-span-4">
+            <Button onClick={handleAddSize} className="col-span-1 sm:col-span-2 lg:col-span-4">
               Add Size
             </Button>
           </div>
@@ -226,7 +226,7 @@ export function PrintSizes({ sizes: initialSizes, onUpdate }: PrintSizesProps) {
             {sizes.map((size) => (
               <div
                 key={size.id}
-                className="grid grid-cols-4 gap-4 rounded-lg border p-4"
+                className="grid grid-cols-1 gap-4 rounded-lg border p-4 sm:grid-cols-2 lg:grid-cols-4"
               >
                 {editingSize?.id === size.id ? (
                   <>
@@ -295,7 +295,7 @@ export function PrintSizes({ sizes: initialSizes, onUpdate }: PrintSizesProps) {
                         placeholder="Leave empty for profit-based pricing"
                       />
                     </div>
-                    <div className="col-span-4 flex justify-end gap-2">
+                    <div className="col-span-1 flex justify-end gap-2 sm:col-span-2 lg:col-span-4">
                       <Button
                         variant="outline"
                         onClick={() => setEditingSize(null)}

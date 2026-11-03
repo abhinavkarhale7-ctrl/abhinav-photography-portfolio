@@ -137,11 +137,11 @@ export function StorePage({ initialProducts }: StorePageProps) {
       <main className="container mx-auto px-4 py-12 pt-24">
         <div className="space-y-6">
           <div className="space-y-4">
-            <Skeleton className="h-10 w-64" />
-            <Skeleton className="h-6 w-96" />
+            <Skeleton className="h-10 w-full max-w-64" />
+            <Skeleton className="h-6 w-full max-w-96" />
           </div>
-          <div className="flex gap-4">
-            <Skeleton className="h-10 w-64" />
+          <div className="flex flex-wrap gap-4">
+            <Skeleton className="h-10 w-full max-w-64" />
             <Skeleton className="h-10 w-32" />
             <Skeleton className="h-10 w-20" />
           </div>

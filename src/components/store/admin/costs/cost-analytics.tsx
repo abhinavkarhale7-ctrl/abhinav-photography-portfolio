@@ -9,7 +9,7 @@ import { formatPrice } from '~/lib/utils'
 import {
   TrendingUp,
   AlertCircle,
-  DollarSign,
+  IndianRupee,
   Package,
   Truck
 } from 'lucide-react'
@@ -34,7 +34,7 @@ export function CostAnalytics({ sizes, shippingMethods }: CostAnalyticsProps) {
         sellPrice,
         profit,
         profitMargin,
-        dimension: `${size.width}"×${size.height}"`
+        dimension: `${size.width}"Ã—${size.height}"`
       }
     }).sort((a, b) => b.profit - a.profit)
 
@@ -116,7 +116,7 @@ export function CostAnalytics({ sizes, shippingMethods }: CostAnalyticsProps) {
                   {analytics.metrics.averageMargin.toFixed(1)}%
                 </p>
               </div>
-              <DollarSign className="h-8 w-8 text-blue-600" />
+              <IndianRupee className="h-8 w-8 text-blue-600" />
             </div>
             <Badge variant="secondary" className="mt-2">
               {getMarginStatus(analytics.metrics.averageMargin)}

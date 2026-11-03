@@ -36,11 +36,15 @@ import {
 import { DeleteProductButton } from '~/components/store/admin/delete-product-button'
 
 interface AdminProductsProps {
-  products: Product[]
+  products: Array<Product & { sizeCount?: number }>
 }
 
 // Separate the product row into its own memoized component
-const ProductRow = memo(function ProductRow({ product }: { product: Product }) {
+const ProductRow = memo(function ProductRow({
+  product,
+}: {
+  product: Product & { sizeCount?: number }
+}) {
   const router = useRouter()
   const [active, setActive] = useState(product.active)
   const [saving, setSaving] = useState(false)
@@ -89,7 +93,16 @@ const ProductRow = memo(function ProductRow({ product }: { product: Product }) {
           />
         </div>
       </TableCell>
-      <TableCell className="font-medium">{product.name}</TableCell>
+      <TableCell className="font-medium">
+        <div className="flex flex-col gap-1">
+          <span>{product.name}</span>
+          {product.sizeCount === 0 && (
+            <span className="text-amber-600 text-xs font-normal">
+              No print sizes — run “Sync print sizes”
+            </span>
+          )}
+        </div>
+      </TableCell>
       <TableCell className="max-w-xs truncate">{product.description}</TableCell>
       <TableCell>
         <div className="flex items-center gap-2">

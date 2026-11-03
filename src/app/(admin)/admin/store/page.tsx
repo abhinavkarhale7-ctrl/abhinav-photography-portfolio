@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import { db } from '~/server/db'
 import { products, productSizes, orders, shippingMethods } from '~/server/db/schema'
-import { desc, eq } from 'drizzle-orm'
+import { count, desc, eq } from 'drizzle-orm'
 import { AdminOrders } from '~/components/store/admin/orders'
 import { AdminProducts } from '~/components/store/admin/products'
 import { AdminActions } from '~/components/store/admin/actions' 
@@ -19,7 +19,25 @@ export const metadata: Metadata = {
 export const dynamic = 'force-dynamic'
 
 async function getProducts() {
-  return await db.select().from(products).orderBy(desc(products.createdAt))
+  const rows = await db
+    .select()
+    .from(products)
+    .orderBy(desc(products.createdAt))
+
+  const sizeCounts = await db
+    .select({ productId: productSizes.productId, total: count() })
+    .from(productSizes)
+    .where(eq(productSizes.active, true))
+    .groupBy(productSizes.productId)
+
+  const sizeMap = new Map(
+    sizeCounts.map((row) => [row.productId, Number(row.total)]),
+  )
+
+  return rows.map((product) => ({
+    ...product,
+    sizeCount: sizeMap.get(product.id) ?? 0,
+  }))
 }
 
 async function getRecentOrders() {

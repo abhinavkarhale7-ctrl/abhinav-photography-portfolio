@@ -29,9 +29,20 @@ export async function GET(request: NextRequest) {
       path: '/',
     })
 
-    // Redirect to the gallery page
-    const redirectUrl = redirectTo || `/g/${gallerySlug}`
-    return NextResponse.redirect(new URL(redirectUrl, request.url))
+    // Redirect to the gallery page. Only allow same-origin paths: an absolute
+    // URL or protocol-relative "//host" here would turn this endpoint into an
+    // open redirect that phishers can point at your domain.
+    const safeRedirect = (() => {
+      const fallback = `/g/${encodeURIComponent(gallerySlug)}`
+      if (!redirectTo) return fallback
+      if (!redirectTo.startsWith('/')) return fallback
+      if (redirectTo.startsWith('//') || redirectTo.startsWith('/\\')) {
+        return fallback
+      }
+      return redirectTo
+    })()
+
+    return NextResponse.redirect(new URL(safeRedirect, request.url))
   } catch (error) {
     console.error('Failed to set temp access cookie:', error)
     return NextResponse.json({ error: 'Failed to set cookie' }, { status: 500 })

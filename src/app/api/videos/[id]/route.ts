@@ -4,6 +4,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getVideoById, updateVideo, deleteVideo } from '~/server/services/video-service'
+import { getSession } from '~/lib/auth/auth'
 import { z } from 'zod'
 
 const updateVideoSchema = z.object({
@@ -39,6 +40,9 @@ export async function GET(
 ) {
   const params = await props.params
   try {
+    const session = await getSession()
+    const isAdmin = session?.role === 'admin'
+
     const video = await getVideoById(params.id)
 
     if (!video) {
@@ -48,7 +52,15 @@ export async function GET(
       )
     }
 
-    return NextResponse.json({ video })
+    // Private videos are invisible to anyone who is not an admin (matching the
+    // list endpoint), and the password hash is never returned.
+    if (!isAdmin && video.visibility === 'private') {
+      return NextResponse.json({ error: 'Video not found' }, { status: 404 })
+    }
+
+    const { password: _password, ...safeVideo } = video
+
+    return NextResponse.json({ video: safeVideo })
   } catch (error) {
     console.error('Error fetching video:', error)
     return NextResponse.json(
@@ -66,6 +78,13 @@ export async function PATCH(
   props: { params: Promise<{ id: string }> }
 ) {
   const params = await props.params
+
+  // Admin-only: previously anyone could edit any video.
+  const session = await getSession()
+  if (!session || session.role !== 'admin') {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   try {
     const body = await request.json()
     const validatedData = updateVideoSchema.parse(body)
@@ -105,6 +124,13 @@ export async function DELETE(
   props: { params: Promise<{ id: string }> }
 ) {
   const params = await props.params
+
+  // Admin-only: deleting videos must never be open to the public.
+  const session = await getSession()
+  if (!session || session.role !== 'admin') {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   try {
     await deleteVideo(params.id)
 

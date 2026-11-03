@@ -1,18 +1,3 @@
-import { siteConfig } from '~/config/site'
-
-const mediaSrcHosts = Array.from(
-  new Set(
-    [
-      'https://*.r2.cloudflarestorage.com',
-      siteConfig.streamBucketUrl,
-      ...(siteConfig.mediaHosts ?? []),
-    ].filter(Boolean),
-  ),
-)
-
-const mediaSrcDirective =
-  ["media-src 'self' data: blob:", ...mediaSrcHosts].join(' ') + ';'
-
 // Security configuration for the application
 export const securityConfig = {
   // Password requirements
@@ -49,25 +34,8 @@ export const securityConfig = {
     adminMultiplier: 3,
   },
 
-  // Security headers
-  headers: {
-    'X-Content-Type-Options': 'nosniff',
-    'X-Frame-Options': 'DENY',
-    'X-XSS-Protection': '1; mode=block',
-    'Referrer-Policy': 'strict-origin-when-cross-origin',
-    'Content-Security-Policy': `
-      default-src 'self';
-      script-src 'self' 'unsafe-inline' 'unsafe-eval' https://checkout.razorpay.com;
-      style-src 'self' 'unsafe-inline';
-      img-src 'self' data: https: blob:;
-      font-src 'self' data:;
-  ${mediaSrcDirective}
-      connect-src 'self' https://api.razorpay.com https://lumberjack.razorpay.com https://*.r2.cloudflarestorage.com ${siteConfig.imageBucketUrl} ${siteConfig.blogBucketUrl} ${siteConfig.aboutBucketUrl} ${siteConfig.customBucketUrl} ${siteConfig.streamBucketUrl} ${siteConfig.filesBucketUrl} ${siteConfig.bucketsUrl};
-      frame-src https://api.razorpay.com https://checkout.razorpay.com;
-    `
-      .replace(/\s+/g, ' ')
-      .trim(),
-  },
+  // Security headers live in next.config.ts so they apply to every route.
+  // They used to be defined here but were never actually sent.
 
   // Input validation
   validation: {

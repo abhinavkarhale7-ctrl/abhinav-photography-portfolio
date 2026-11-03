@@ -85,7 +85,7 @@
     "hls.js": "^1.6.15",
     "jose": "^5.10.0",
     "lucide-react": "^0.435.0",
-    "next": "16.0.10",
+    "next": "16.4.4",
     "next-axiom": "^1.9.3",
     "next-themes": "^0.4.6",
     "pg": "^8.16.3",
@@ -111,7 +111,7 @@
     "babel-plugin-react-compiler": "^1.0.0",
     "drizzle-kit": "^0.21.4",
     "eslint": "^9.39.1",
-    "eslint-config-next": "16.0.1",
+    "eslint-config-next": "16.4.4",
     "knip": "^5.71.0",
     "postcss": "^8.5.6",
     "prettier": "^3.7.4",
@@ -129,7 +129,9 @@
       "esbuild"
     ],
     "overrides": {
-      "@types/react": "19.2.2"
+      "@types/react": "19.2.2",
+      "fast-xml-parser": ">=5.7.0",
+      "tar": ">=7.5.21"
     }
   }
 }

@@ -5,8 +5,16 @@ import { siteConfig } from '~/config/site'
 import { db } from '~/server/db'
 import { orders, products, productSizes } from '~/server/db/schema'
 import { eq } from 'drizzle-orm'
+import { getSession } from '~/lib/auth/auth'
 
 export async function POST(request: Request) {
+  // Admin-only: sends a "your order shipped" email to a customer, so it must
+  // not be triggerable by strangers.
+  const session = await getSession()
+  if (!session || session.role !== 'admin') {
+    return Response.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   if (!env.RESEND_API_KEY) {
     return Response.json(
       { error: 'Email delivery is not configured' },

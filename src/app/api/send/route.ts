@@ -20,6 +20,7 @@ import { siteConfig } from '~/config/site'
 import { emailSchema } from '~/lib/validations/store'
 import { logAction } from '~/lib/logging'
 import { emailRateLimit, getClientIP } from '~/lib/rate-limit'
+import { getSession } from '~/lib/auth/auth'
 
 interface ShippingAddress {
   line1: string
@@ -36,6 +37,13 @@ interface _ShippingDetails {
 }
 
 export async function POST(request: Request) {
+  // Admin-only: this endpoint sends mail from the site's domain, so it must
+  // never be callable by the public.
+  const session = await getSession()
+  if (!session || session.role !== 'admin') {
+    return Response.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   const adminEmailAddress = env.ADMIN_EMAIL
   if (!env.RESEND_API_KEY || !adminEmailAddress) {
     return Response.json(

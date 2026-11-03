@@ -4,6 +4,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getVideos, createVideo } from '~/server/services/video-service'
+import { getSession } from '~/lib/auth/auth'
 import { z } from 'zod'
 
 const createVideoSchema = z.object({
@@ -34,6 +35,9 @@ const createVideoSchema = z.object({
  */
 export async function GET(request: NextRequest) {
   try {
+    const session = await getSession()
+    const isAdmin = session?.role === 'admin'
+
     const { searchParams } = new URL(request.url)
     const visibility = searchParams.get('visibility') as 'public' | 'private' | 'unlisted' | null
     const limitParam = searchParams.get('limit')
@@ -50,12 +54,17 @@ export async function GET(request: NextRequest) {
     }
 
     const videos = await getVideos({
-      visibility: visibility || undefined,
+      // Only an admin may list private or unlisted videos. Everyone else is
+      // limited to public ones, whatever they ask for in the query string.
+      visibility: isAdmin ? visibility || undefined : 'public',
       limit,
       offset,
     })
 
-    return NextResponse.json({ videos })
+    // Never expose the password hash, even to an admin's browser.
+    const safeVideos = videos.map(({ password: _password, ...video }) => video)
+
+    return NextResponse.json({ videos: safeVideos })
   } catch (error) {
     console.error('Error fetching videos:', error)
     return NextResponse.json(
@@ -69,6 +78,12 @@ export async function GET(request: NextRequest) {
  * POST /api/videos - Create video
  */
 export async function POST(request: NextRequest) {
+  // Admin-only: creating videos must never be open to the public.
+  const session = await getSession()
+  if (!session || session.role !== 'admin') {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   try {
     const body = await request.json()
     const validatedData = createVideoSchema.parse(body)

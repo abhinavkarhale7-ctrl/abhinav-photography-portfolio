@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { getSession } from '~/lib/auth/authSession'
 import { logSecurityEvent } from '~/lib/security-logging'
-import { securityConfig } from '~/config/security-config'
 
 export async function proxy(request: NextRequest) {
   // Extract the base path (first segment of the URL path)
@@ -11,10 +10,9 @@ export async function proxy(request: NextRequest) {
   // Create response with security headers
   const response = NextResponse.next()
 
-  // Add comprehensive security headers
-  for (const [name, value] of Object.entries(securityConfig.headers)) {
-    response.headers.set(name, value)
-  }
+  // Note: security headers are set globally in next.config.ts so they cover
+  // every route, including this one. Setting them here too would duplicate
+  // them (and duplicate CSP headers are ambiguous to browsers).
 
   // Note: Admin setup check is now handled in individual page components
   // to avoid database calls in Edge Runtime middleware

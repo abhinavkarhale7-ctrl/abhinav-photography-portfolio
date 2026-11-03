@@ -2,7 +2,7 @@
 
 import { requireAdminAuth } from '~/lib/auth/permissions'
 import { db, dbWithTx } from '~/server/db'
-import { basePrintSizes, productSizes } from '~/server/db/schema'
+import { basePrintSizes, products, productSizes } from '~/server/db/schema'
 import { revalidatePath } from 'next/cache'
 import { eq, and, or, inArray } from 'drizzle-orm'
 
@@ -25,9 +25,45 @@ export async function addPrintSize(data: {
       })
       .returning()
 
+    if (!size) {
+      return { success: false, error: 'Failed to add size' }
+    }
+
+    // Offer the new size on every existing product, otherwise those products
+    // stay unbuyable until someone syncs them by hand.
+    const allProducts = await db.select({ id: products.id }).from(products)
+    const price = data.sellAtPrice > 0 ? data.sellAtPrice : data.basePrice
+
+    for (const product of allProducts) {
+      const [existing] = await db
+        .select({ id: productSizes.id })
+        .from(productSizes)
+        .where(
+          and(
+            eq(productSizes.productId, product.id),
+            eq(productSizes.name, data.name),
+          ),
+        )
+        .limit(1)
+
+      if (existing) continue
+
+      await db.insert(productSizes).values({
+        productId: product.id,
+        name: data.name,
+        width: data.width,
+        height: data.height,
+        basePrice: price,
+        stripeProductId: '',
+        stripePriceId: '',
+        active: true,
+      })
+    }
+
     revalidatePath('/admin/store/costs')
     revalidatePath('/admin/store')
     revalidatePath('/admin/store/products')
+    revalidatePath('/store')
     return { success: true, data: size }
   } catch (_error) {
     return { success: false, error: 'Failed to add size' }

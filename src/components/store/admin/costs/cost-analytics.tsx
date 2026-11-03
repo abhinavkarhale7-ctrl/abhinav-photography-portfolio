@@ -34,7 +34,7 @@ export function CostAnalytics({ sizes, shippingMethods }: CostAnalyticsProps) {
         sellPrice,
         profit,
         profitMargin,
-        dimension: `${size.width}"Ã—${size.height}"`
+        dimension: `${size.width}"×${size.height}"`
       }
     }).sort((a, b) => b.profit - a.profit)
 

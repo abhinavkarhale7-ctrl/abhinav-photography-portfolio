@@ -132,7 +132,7 @@ export function PricingStrategies({ sizes, profitMargin, onUpdate }: PricingStra
 
     if (dryRun) {
       toast.info(
-        `Preview only â€” ${updates.length} sizes would change. Nothing was saved.`,
+        `Preview only — ${updates.length} sizes would change. Nothing was saved.`,
       )
       return updates
     }
@@ -401,7 +401,7 @@ export function PricingStrategies({ sizes, profitMargin, onUpdate }: PricingStra
               <div key={size.id} className="flex items-center justify-between p-3 rounded border">
                 <div>
                   <p className="font-medium">{size.name}</p>
-                  <p className="text-sm text-muted-foreground">{size.width}&quot;Ã—{size.height}&quot;</p>
+                  <p className="text-sm text-muted-foreground">{size.width}&quot;×{size.height}&quot;</p>
                 </div>
                 <div className="flex items-center gap-6">
                   <div className="text-sm">

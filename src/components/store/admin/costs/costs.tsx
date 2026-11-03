@@ -130,7 +130,7 @@ export function Costs({ sizes, initialTax, shippingMethods }: CostsProps) {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Avg. Profit/Print</p>
-                <p className="text-2xl font-bold">â‚¹{metrics.averageProfit.toFixed(2)}</p>
+                <p className="text-2xl font-bold">₹{metrics.averageProfit.toFixed(2)}</p>
               </div>
               <div className="p-2 bg-blue-100 text-blue-600 rounded-full">
                 <IndianRupee className="h-5 w-5" />

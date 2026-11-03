@@ -1,5 +1,20 @@
 # Store Setup Guide
 
+> **Heads up — the payment sections of this guide are legacy.**
+> This site takes payments with **Razorpay**, not Stripe. Stripe has been removed
+> from the codebase, so any Stripe account step, webhook step or `STRIPE_*`
+> variable below no longer applies.
+>
+> Current setup:
+>
+> 1. Set `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET` and `NEXT_PUBLIC_RAZORPAY_KEY_ID`.
+> 2. Set `NEXT_PUBLIC_STORE_ENABLED=true`.
+> 3. Admin → Store → Costs → **Print Sizes**: add sizes with a base cost and a selling price (INR).
+> 4. Admin → Store → Settings → **Import Gallery Images as Products**.
+> 5. Admin → Store → Products: toggle each print live.
+>
+> Checkout opens Razorpay Checkout and verifies the signature at `/api/razorpay/verify`. No webhook is required.
+
 This comprehensive guide walks you through setting up the e-commerce store feature from scratch. The store is **completely optional** and can be disabled if you only need a portfolio website.
 
 ## 📋 Table of Contents

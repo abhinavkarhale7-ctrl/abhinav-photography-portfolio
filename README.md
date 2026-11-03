@@ -146,12 +146,14 @@ The video pipeline is built for HLS playback with visibility controls and audien
 
 The e-commerce store is **completely optional** and can be easily disabled if you only need a portfolio without selling capabilities.
 
-**📚 Complete Store Setup Guide**: For detailed Stripe configuration, webhook setup, and production deployment, see **[Store Setup Guide](./docs/STORE_SETUP_GUIDE.md)**
+> **Payments run on Razorpay.** Stripe has been removed from this codebase. Ignore any Stripe steps in the older setup guide and configure `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET` and `NEXT_PUBLIC_RAZORPAY_KEY_ID` instead.
+
+**📚 Complete Store Setup Guide**: For store configuration and production deployment, see **[Store Setup Guide](./docs/STORE_SETUP_GUIDE.md)** (payment sections are legacy Stripe documentation)
 
 **For users who don't need e-commerce features:**
 
 1. **Disable via Configuration**: Set `features.storeEnabled: false` in `src/config/site.ts`
-2. **Disable via Environment**: Don't include Stripe environment variables (`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`)
+2. **Disable via Environment**: Set `NEXT_PUBLIC_STORE_ENABLED=false`, or remove the Razorpay variables (`RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `NEXT_PUBLIC_RAZORPAY_KEY_ID`)
 3. **Both methods**: Use both approaches for complete certainty
 
 When store features are disabled:

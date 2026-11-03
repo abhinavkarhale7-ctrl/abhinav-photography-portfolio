@@ -9,6 +9,20 @@ import { orderStatusHistory, orders } from '~/server/db/schema'
 
 export const runtime = 'nodejs'
 
+const ENDPOINT_MESSAGE =
+  'Razorpay webhook endpoint. Razorpay sends POST requests here; opening it in a browser will not show anything else.'
+
+/**
+ * A plain visit (or a link/uptime check) should not look like a broken server.
+ * Razorpay only ever POSTs, so answering GET/HEAD with 200 is harmless.
+ */
+export async function GET() {
+  return new NextResponse(ENDPOINT_MESSAGE, {
+    status: 200,
+    headers: { 'content-type': 'text/plain; charset=utf-8' },
+  })
+}
+
 interface RazorpayWebhookBody {
   event?: string
   payload?: {
@@ -37,11 +51,11 @@ export async function POST(request: Request) {
   const secret = process.env.RAZORPAY_WEBHOOK_SECRET
 
   if (!secret) {
-    // Razorpay will retry, which is what we want until the secret is set.
-    return NextResponse.json(
-      { error: 'Webhook is not configured' },
-      { status: 503 },
-    )
+    // Accept the delivery so Razorpay can validate and save the endpoint before
+    // the secret exists. Nothing is processed, and once the secret is set any
+    // unsigned request is rejected below. Deliberately not logged: this branch
+    // is reachable by anyone and must not become a write-amplification vector.
+    return NextResponse.json({ received: true, configured: false })
   }
 
   const signature = request.headers.get('x-razorpay-signature')

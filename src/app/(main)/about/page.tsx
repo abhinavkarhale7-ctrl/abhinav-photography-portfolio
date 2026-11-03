@@ -124,21 +124,19 @@ export default async function About() {
   const pageTitle = aboutData?.title || 'About ' + siteConfig.ownerName
 
   return (
-    <main className="min-h-screen">
-      <article className="mx-auto w-full max-w-3xl px-5 py-16 sm:px-8 sm:py-24">
-        <header className="mb-10 border-b pb-8 sm:mb-12">
-          <p className="mb-3 text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
-            About
-          </p>
-          <h1 className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl lg:text-5xl">
-            {pageTitle}
-          </h1>
-        </header>
+    <article className="mx-auto w-full max-w-3xl px-5 py-16 sm:px-8 sm:py-24">
+      <header className="mb-10 border-b pb-8 sm:mb-12">
+        <p className="mb-3 text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
+          About
+        </p>
+        <h1 className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl lg:text-5xl">
+          {pageTitle}
+        </h1>
+      </header>
 
-        <div className="prose prose-base max-w-none dark:prose-invert sm:prose-lg">
-          <TipTapRenderer content={content} />
-        </div>
-      </article>
-    </main>
+      <div className="prose prose-base max-w-none dark:prose-invert sm:prose-lg">
+        <TipTapRenderer content={content} />
+      </div>
+    </article>
   )
 }

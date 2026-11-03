@@ -9,8 +9,10 @@ export function isStoreEnabledClient(): boolean {
 }
 
 /**
- * Checks if the store is enabled on the server side
- * Checks both siteConfig and required environment variables
+ * Checks if the store is enabled on the server side.
+ *
+ * The storefront and checkout need a working payment provider. This project
+ * uses Razorpay, so the gate checks Razorpay credentials rather than Stripe.
  */
 export function isStoreEnabledServer(): boolean {
   // First check if store is disabled in config
@@ -18,10 +20,10 @@ export function isStoreEnabledServer(): boolean {
     return false
   }
 
-  // Check if required Stripe environment variables are present
-  const hasStripeSecretKey = !!process.env.STRIPE_SECRET_KEY
-  const hasStripeWebhookSecret = !!process.env.STRIPE_WEBHOOK_SECRET
-  const hasStripePublishableKey = !!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+  const hasKeyId = !!(
+    process.env.RAZORPAY_KEY_ID ?? process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID
+  )
+  const hasKeySecret = !!process.env.RAZORPAY_KEY_SECRET
 
-  return hasStripeSecretKey && hasStripeWebhookSecret && hasStripePublishableKey
+  return hasKeyId && hasKeySecret
 }

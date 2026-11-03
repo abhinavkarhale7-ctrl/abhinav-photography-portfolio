@@ -19,11 +19,48 @@ async function loadGoogleFont(font: string, text: string) {
   throw new Error('failed to load font data')
 }
 
+/**
+ * Social images are generated from our own storage only. Without this the
+ * endpoint would happily fetch any URL a visitor supplies.
+ */
+function isAllowedImageUrl(value: string | null): string | null {
+  if (!value) return null
+
+  try {
+    const url = new URL(value)
+
+    if (url.protocol !== 'https:') return null
+
+    const host = url.hostname.toLowerCase()
+    const configuredDomain = process.env.NEXT_PUBLIC_IMAGE_DOMAIN?.toLowerCase()
+
+    const allowed =
+      host.endsWith('.r2.dev') ||
+      host.endsWith('.r2.cloudflarestorage.com') ||
+      host === 'abhinavkarhale-photography.vercel.app' ||
+      (configuredDomain ? host === configuredDomain || host.endsWith(`.${configuredDomain}`) : false)
+
+    return allowed ? value : null
+  } catch {
+    return null
+  }
+}
+
+// Generated images are deterministic per URL, so let the CDN absorb repeats
+// instead of re-rendering on every request.
+const OG_CACHE_HEADERS = {
+  'Cache-Control': 'public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800',
+}
+
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
-    const imageUrl = searchParams.get('image')
-    const title = searchParams.get('title') ?? ''
+    const rawTitle = searchParams.get('title') ?? ''
+    // Bounded input keeps the Google Fonts request and the rendered text small.
+    const title = rawTitle.slice(0, 120)
+    // Only allow images from our own storage; otherwise this endpoint could be
+    // used to make the server fetch arbitrary URLs.
+    const imageUrl = isAllowedImageUrl(searchParams.get('image'))
 
     // Load the font with the actual text we'll display
     const fontData = await loadGoogleFont('Inter', title)
@@ -55,6 +92,7 @@ export async function GET(req: NextRequest) {
         {
           width: 1200,
           height: 630,
+          headers: OG_CACHE_HEADERS,
           fonts: [
             {
               name: 'Inter',

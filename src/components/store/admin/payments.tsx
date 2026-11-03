@@ -29,6 +29,8 @@ export interface PaymentsPanelProps {
   storeEnabled: boolean
   /** Server key and browser key come from different Razorpay accounts. */
   keyMismatch: boolean
+  /** RAZORPAY_WEBHOOK_SECRET is present, so payments confirm server-side. */
+  webhookConfigured: boolean
 }
 
 function InfoRow({
@@ -53,6 +55,7 @@ export function PaymentsPanel({
   gatewayFeePercent,
   storeEnabled,
   keyMismatch,
+  webhookConfigured,
 }: PaymentsPanelProps) {
   const fee = Number(gatewayFeePercent.toFixed(2))
 
@@ -81,6 +84,21 @@ export function PaymentsPanel({
             Replace <code>RAZORPAY_KEY_ID</code> and{' '}
             <code>RAZORPAY_KEY_SECRET</code> with live keys before sharing the
             store.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {!webhookConfigured && (
+        <Alert className="border-sky-200 bg-sky-50 text-sky-900">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Payment webhook not configured</AlertTitle>
+          <AlertDescription className="text-sky-900">
+            Orders are currently confirmed only by the customer&apos;s browser
+            returning from Razorpay. If they close the tab after paying, the
+            order stays <strong>pending</strong>. Add the endpoint{' '}
+            <code>/api/razorpay/webhook</code> in Razorpay with the{' '}
+            <code>payment.captured</code> event, then set{' '}
+            <code>RAZORPAY_WEBHOOK_SECRET</code> here to close that gap.
           </AlertDescription>
         </Alert>
       )}
@@ -132,6 +150,17 @@ export function PaymentsPanel({
               <InfoRow label="Currency">INR (₹)</InfoRow>
 
               <InfoRow label="Gateway fee">{fee}%</InfoRow>
+
+              <InfoRow label="Payment webhook">
+                {webhookConfigured ? (
+                  <Badge className="gap-1 bg-green-600 text-white hover:bg-green-600">
+                    <CheckCircle2 className="h-3 w-3" />
+                    Configured
+                  </Badge>
+                ) : (
+                  <Badge variant="secondary">Not configured</Badge>
+                )}
+              </InfoRow>
 
               <InfoRow label="Storefront">
                 {storeEnabled ? (

@@ -103,6 +103,7 @@ async function getPaymentSettings() {
     storeEnabled: isStoreEnabledServer(),
     // Orders use the server key; the browser opens the public key.
     keyMismatch: Boolean(keyId && publicKeyId && keyId !== publicKeyId),
+    webhookConfigured: Boolean(process.env.RAZORPAY_WEBHOOK_SECRET),
   }
 }
 
